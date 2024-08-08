@@ -1,0 +1,52 @@
+%% Article class: \documentclass[12pt,letterpaper]{article}
+%% Exam class: \documentclass[12pt,answers,addpoints]{exam}
+
+% === figure captions in exam class ===
+\usepackage{caption}
+
+% === graphic packages ===
+\usepackage{graphicx}
+
+% === bibliography package ===
+\usepackage{natbib}
+
+% === margin and formatting ===
+\usepackage[top=1in, bottom=1in, right=1in, left=1in]{geometry}
+%\usepackage{setspace}
+%\setpapersize{USletter}
+%\pdfpagewidth= 8.5 true in
+%\pdfpageheight= 11 true in
+%\usepackage{vmargin}
+%\usepackage{fullpage}
+
+% === math packages ===
+\usepackage[reqno]{amsmath}
+\usepackage{amssymb}
+
+% === additional packages ===
+\usepackage{enumerate}
+\usepackage[normalem]{ulem}
+
+% === link formatting ===
+\usepackage{hyperref}
+\usepackage{url}
+\hypersetup{
+  colorlinks = true,
+  linkcolor=blue, % color of internal links
+  citecolor=blue, % color of links to bibliography
+  urlcolor=blue, % color of external links
+  %pagebackref=true,
+  %implicit=false,
+  %bookmarks=true,
+  bookmarksopen=true,
+  pdfdisplaydoctitle=true
+}
+
+
+% === RTM date format ===
+\usepackage{datetime}
+\newdateformat{rtmdate}{\THEDAY \space \monthname[\THEMONTH] \THEYEAR}
+\rtmdate
+% === RTM address ===
+\newcommand{\rtmaddr}{{Department of Government, American University, Kerwin Hall 228, 4400 Massachusetts Avenue NW, Washington DC 20016-8130. tel: +1 202 885 6470; {\tt rtm} (at) {\tt american} (dot) {\tt edu}; {\tt
+http://www.ryantmoore.org}.}}

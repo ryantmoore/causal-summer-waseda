@@ -1,0 +1,146 @@
+\documentclass[11pt]{article}
+\input{rtmpreamb}
+\usepackage{bibentry}
+\newcommand{\bibverse}[1]{\begin{verse} \bibentry{#1}. \end{verse}}
+
+\title{Causal Inference Summer Intensive Seminar \\ Graduate School of Political Science \\ Waseda University }
+\author{Ryan T. Moore\footnote{\rtmaddr}}
+\date{2024-08-08}
+
+\newcommand{\firstdate}{20 }
+\newcommand{\thisyear}{2024}
+
+\usepackage{url}
+
+\begin{document}
+
+\maketitle
+
+\section*{Course Information}
+Causal Inference Summer Intensive Seminar \\ Graduate School of Political Science \\ Waseda University \\
+\firstdate August - 23 August \thisyear\\
+Lecture: 10:40-12:20 and 13:10-14:50 \\
+Office hours: 15:05-16:45  \\
+Waseda Campus Bldg. 3, 9F 909
+
+\section*{Instructor Information}
+Ryan T. Moore, Ph.D. \\
+Associate Professor of Government\\
+American University\\
+Homepage: \url{http://www.ryantmoore.org} \\
+Email: {\tt rtm} (at) {\tt american} (dot) {\tt edu} 
+
+\vspace{.1in}
+
+\section*{Course Description}
+
+This course is an introduction to causal inference and experiments for the social sciences. We will discuss the nature of causal research, how to design research to answer different types of causal questions, how to analyze experimental data, and how to interpret the results of causal analyses. We will show examples, implementation, and analysis using the R statistical language.
+
+Specific topics will include potential outcomes, experiments, blocked designs, and conjoint, list, and multiarm bandit survey experiments, regression and experiments, and intereference in experiments.
+
+\section*{Learning Objectives}
+
+By the end of the course, you should be able to
+
+\begin{itemize}
+\item Identify causal effects using the potential outcomes framework
+\item Perform design-based inference for randomized experiments
+\item Create and analyze variety of randomized designs, including for blocked, clustered, conjoint, list, and multiarm bandit experiments
+%\item Assess the sensitivity of estimates to unmeasured confounders
+\item Relate experiments to regression quantities
+\item Estimate mediation effects and assess their sensitivity
+\item Discuss and evaluate designs under interference
+\end{itemize}
+
+\section*{Learning Strategies}
+
+\subsection*{Readings}
+
+Participants are welcome to complete the readings before the course meeting under which they are listed below. Note that the many citations below are provided as references, not as prerequisites for participation in the seminar. The primary textbook for the course is
+
+\nobibliography*
+
+\bibverse{gergre12}
+
+\section*{Software}
+
+The primary software in the course is R. See \href{http://www.ryantmoore.org/files/class/introPolResearch/intro_R_short.pdf}{http://j.mp/2swvN0p}
+for help getting started.
+
+\section*{Intellectual Property}
+
+Course content is the intellectual property of the instructor or student who created it, and may not be recorded or distributed without consent.
+
+
+
+\section*{Calendar}
+\renewcommand{\labelitemi}{$\square$}
+
+\subsection*{Day 1: Tuesday, \firstdate August}
+
+	Introduction to causal inference. The potential outcomes framework. Estimands. Randomized experiments. Inference. 
+
+\begin{itemize}
+  \item Chapters 2-3 of \bibverse{gergre12}
+\end{itemize}
+
+\subsection*{Day 2: Wednesday, 21 August}
+
+Blocked designs. Clustered designs. Regression and Experiments. Heterogeneous treatment effects. Exercise in potential outcomes.
+
+\begin{itemize}
+  \item Chapter 3 of Gerber and Green (end)
+  \item Chapter 4 of Gerber and Green
+  \item \bibverse{moore12cv}
+	\item \bibverse{moomoo13cv}
+	\item Chapter 9 of Gerber and Green
+	\item \bibverse{lin13}
+\end{itemize}
+
+\subsection*{Day 3: Thursday, 22 August}
+
+Survey experiments. Conjoints, item counts, lists. Multiarm bandits.
+
+\begin{itemize}
+	\item \bibverse{sniderman18}
+	\item \bibverse{haihopyam14}
+	\item \bibverse{abrkocmag22} 
+	\item \bibverse{banhaihop22}
+	\item \bibverse{horyussmi18}
+	\item \bibverse{blaima12}
+	\item \bibverse{blacopmoo20}
+	\item \bibverse{blaimalya14}
+	\item \bibverse{offcopgre21}
+	\item \bibverse{gupgraagr11}
+\end{itemize}
+
+
+\subsection*{Day 4: Friday, 23 August}
+
+Mediation.
+\begin{itemize}
+	\item Chapter 10 of Gerber and Green
+	\item \bibverse{imakeetin11}
+	\item \bibverse{bulgreha10}
+	\item \bibverse{achblasen18}
+	\item \bibverse{blacopmoo20}
+	\item \bibverse{imakeeyam10}
+\end{itemize}
+
+Interference. 
+
+\begin{itemize}
+	\item Chapter 8 of Gerber and Green
+	\item \bibverse{hudhal08}
+	\item \bibverse{rosenbaum07}
+	\item \bibverse{sobel06}
+\end{itemize}
+
+
+
+\clearpage
+
+\bibliographystyle{plain}
+\nobibliography{main}
+
+\end{document}
