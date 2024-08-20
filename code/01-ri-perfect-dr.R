@@ -1,7 +1,7 @@
 # Randomisation Inference for the Perfect Doctor
 # Ryan T. Moore
 # First: 2020-07-28
-# Last: 2024-07-23
+# Last: 2024-08-20
 
 # R Packages --------------------------------------------------------------
 
@@ -148,22 +148,22 @@ abs(diffs_means) >= abs(-1)
 
 ri_pvalue <- function(y1, y0, rand_mat, obs_tr){
 
-  diffs_means <- rep(NA, nrow(rand_mat))
+  diffs <- rep(NA, nrow(rand_mat))
 
-  obs_te <- mean(y1[obs_tr == 1]) - mean(y0[obs_tr == 0])
+  obs_te <- sd(y1[obs_tr == 1]) - sd(y0[obs_tr == 0])
 
   for(i in 1:nrow(rand_mat)){
 
-    dm <- mean(y1[rand_mat[i, ] == 1]) -
-      mean(y0[rand_mat[i, ] == 0])
+    diff_sd <- sd(y1[rand_mat[i, ] == 1]) -
+      sd(y0[rand_mat[i, ] == 0])
 
-    diffs_means[i] <- dm
+    diffs[i] <- diff_sd
 
   }
 
-  cat("The diffs in means are:\n", diffs_means, "\n")
+  cat("The diffs in means are:\n", diffs, "\n")
   
-  pvalue <- mean(abs(diffs_means) >= abs(obs_te))
+  pvalue <- mean(abs(diffs) >= abs(obs_te))
   
   cat("The p-value is", pvalue, "\n")
 

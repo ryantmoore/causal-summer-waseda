@@ -1,0 +1,1186 @@
+---
+title: | 
+    | Introduction, Potential Outcomes, and Assignments
+date: "2024-08-20"
+date-format: iso
+author: Ryan T. Moore
+format:
+  beamer:
+    fonttheme: serif
+    include-in-header:
+      - file: zzz_beamer_header.tex
+    section-titles: true
+    slide_level: 2
+    toc: true
+institute: 
+  - American University
+link-citations: true 
+bibliography: ../admin/main.bib
+---
+  
+
+```{r}
+#| label: enviro
+#| echo: false
+#| message: false
+#| warning: false
+
+library(kableExtra)
+library(tidyverse)
+```
+
+# Welcome
+
+## About Me
+
+\Large
+
+- Associate Prof of Government  
+(American University)
+- Associate Director, Center for Data Science  
+(American University)
+- Senior Social Scientist  
+(The Lab @ DC)
+- Fellow in Methodology  
+(US Office of Evaluation Sciences: "OES") \pause 
+- 2021-22: Visiting Fellow  
+(Institut Barcelona d'Estudis Internacionals) \pause 
+- Research agenda: political methodology, causal inference, experimental design, 
+experiments in public policy
+
+
+## The Course: Learning Objectives
+
+\large
+
+>- Identify causal effects using the potential outcomes framework
+>- Perform design-based inference for randomized experiments
+>- Create and analyze variety of randomized designs, including for blocked, clustered,
+conjoint, list, and multiarm bandit experiments
+>- Relate experiments to regression quantities and estimate heterogeneous treatment effects
+>- Estimate mediation effects and assess their sensitivity
+<!-- >- Assess the sensitivity of estimates to unmeasured confounders -->
+\pause 
+
+>- Materials at  
+https://github.com/ryantmoore/causal-summer-waseda
+>- (Walk through syllabus)
+
+## The Course: Conduct
+
+\Large
+
+>- Class discussion may be difficult!
+>- I will ask you to quickly turn to someone nearby and _discuss_ questions
+>- For example, soon, I will ask you whether a quantity has a valid _causal_ interpretation
+>- For example, in a day or two, I will ask you how to leave a casino with a lot of \yen!
+>- Often $\approx$ 1-2 minutes
+>- We learn what we don't quite understand when we process/talk about it
+
+
+# What is Causal Inference?
+
+## What is Causal Inference?
+
+\Large
+
+\begin{center}
+``What caused the terror attacks of 9/11?''
+\end{center}
+
+\begin{center}
+vs.
+\end{center}
+
+\begin{center}
+``What is the effect of foreign policy $X$ on domestic terror attacks?''
+\end{center}
+
+\pause 
+\vspace{5mm}
+
+\begin{center}
+``Causes of an effect''
+\end{center}
+
+\begin{center}
+vs.
+\end{center}
+
+\begin{center}
+``Effects of a cause''
+\end{center}
+
+## What is Causal Inference?
+
+\Large
+
+We will focus on "effects of a cause"\pause, where the "cause" is well-defined.
+
+## Example: Canvassing and Program Enrollment
+
+\pause 
+
+\Large
+
+"Canvassing": a systematic program where agents talk with residents (knock on doors) at the residents' home.
+
+\vspace{1mm}
+
+![Credit: The Campaign Workshop](figs/01-canvass.jpg){width=70%}
+
+## Example: Canvassing and Program Enrollment
+
+\large
+
+Suppose we ask, ``Would a canvassing policy increase enrollment in a health insurance program?\text{''} \pause 
+
+\vspace{2mm}
+
+\begin{center}
+\begin{tabular}{ccc}
+Citizen & Canvassed? & Enrolled? \\ \hline
+1 & Yes & Yes \\
+2 & Yes & Yes \\
+3 & No & No \\
+4 & No & No
+\end{tabular}
+\end{center} \pause 
+
+\vspace{2mm}
+
+>- What fraction enroll under canvassing vs. no canvassing?  
+>- $\frac{2}{2} - \frac{0}{2} = 1$
+>- (For each person canvassed, expect 1 more enrollment.)
+
+>- Did the policy "work" (cause more enrollment)?
+
+## Motivating Example: Canvassing and Enrollment
+
+\LARGE
+
+But, is it causal? \newline \pause 
+\vspace{1mm}
+
+What do we really want to know? \newline   \pause 
+\vspace{1mm}
+
+Would canvassing actually _change_ anyone's enrollment? \newline \pause 
+\vspace{1mm}
+
+What would have happened under _other_ conditions? 
+
+
+
+
+## Example: Canvassing and Enrollment
+
+\large 
+\begin{center}
+\begin{tabular}{ccccc}
+ & & Would Enroll if & Would Enroll if  & \\
+Citizen & Canvass? & Canvass? & No Canvass? & Enroll \\ \hline
+1 & Yes & \only<2->{Yes} & \only<6->{\alert{(Yes)}} &  Yes \\
+2 & Yes & \only<3->{Yes} & \only<6->{\alert{(No)}} &  Yes \\
+3 & No & \only<6->{\alert{(Yes)}} & \only<4->{No} &  No \\
+4 & No &\only<6->{\alert{(No)}} & \only<5->{No} &  No
+\end{tabular}
+\end{center}
+
+\vspace{5mm}
+
+\pause 
+
+\onslide<7->{What is the true causal effect of canvassing? \\}
+\onslide<8->{What fraction enroll under canvass vs. no canvass? \\} 
+\onslide<9->{What fraction change enrollment due to canvass?\\} 
+\onslide<10->{$\frac{3}{4} - \frac{1}{4} = \frac{1}{2}$}
+
+
+## Example: Canvassing and Enrollment
+
+Empirical data consistent with *different* _unobserved_ outcomes:
+
+\vspace{4mm}
+
+\large
+\begin{center}
+\begin{tabular}{ccccc}
+ & & Would Enroll if & Would Enroll if  & \\
+Citizen & Canvass? & Canvass? & No Canvass? & Enroll \\ \hline
+1 & Yes & Yes & \alert{(Yes)} &  Yes \\
+2 & Yes & Yes & \alert{(No)} &  Yes \\
+3 & No & \alert{(Yes)} & No &  No \\
+4 & No & \alert{(Yes)} & No &  No
+\end{tabular}
+\end{center}
+
+\pause 
+
+\vspace{5mm}
+
+What is the true causal effect of canvass? \newline  
+What fraction enroll under canvass vs. no canvass? \newline  \pause 
+$\frac{4}{4} - \frac{1}{4} = \frac{3}{4}$
+
+
+## Example: Canvassing and Enrollment
+
+\LARGE
+
+\begin{center}
+Well \ldots~ how do we know which?
+\end{center}
+
+\pause 
+
+\vspace{5mm}
+
+\begin{center}
+We can never know.
+\end{center}
+
+***
+
+\LARGE
+
+\begin{center}
+Can we know for one person?
+\end{center}
+
+\pause 
+
+\vspace{5mm}
+
+\begin{center}
+We can never know.
+\end{center}
+
+***
+
+\LARGE
+
+\begin{center}
+But I have some ideas.
+\end{center}
+
+\pause 
+
+\vspace{5mm}
+
+\begin{center}
+We could not canvass, then canvass later.
+\end{center}
+
+\pause  
+
+\vspace{5mm}
+
+\begin{center}
+We can never know.
+\end{center}
+
+
+***
+
+\LARGE
+
+\begin{center}
+We can never observe both ``Canvassed'' and ``Not Canvassed'' for a unit.
+\end{center}
+
+\pause 
+
+\vspace{5mm}
+
+\begin{center}
+We can never observe both \\ \it{potential outcomes}.
+\end{center}
+
+\pause  
+
+\vspace{5mm}
+
+\begin{center}
+We can never observe both the \\ factual and the counterfactual.
+\end{center}
+
+\pause 
+
+\vspace{5mm}
+
+\begin{center}
+We can never know.
+\end{center}
+
+## The Fundamental Problem of Causal Inference
+
+\LARGE
+
+\begin{center}
+We can never observe more than one {\it potential outcome} for a given unit.
+\end{center}
+
+
+***
+
+\LARGE
+
+\begin{center}
+So, how can we get a {\it causal} estimate?
+\end{center}
+
+\pause 
+
+\vspace{6mm}
+
+\begin{center}
+We infer missing potential outcomes.
+\end{center}
+
+## Why didn't we recover truth?
+
+\large
+
+The problem with our naive estimate of effect:
+
+>- "Canvass" group $\neq$ ``No Canvass\text{''} group
+>- The _potential outcomes_ help predict whether Canvass!
+
+\pause 
+
+\large
+\begin{center}
+\begin{tabular}{ccccc}
+ & & Would Enroll if & Would Enroll if  & \\
+Citizen & Canvass? & Canvass? & No Canvass? & Enroll \\ \hline
+1 & Yes & Yes & \alert{(Yes)} &  Yes \\
+2 & Yes & Yes & \alert{(No)} &  Yes \\
+3 & No & \alert{(Yes)} & No &  No \\
+4 & No &\alert{(No)} & No &  No
+\end{tabular}
+\end{center}
+
+\pause 
+
+\vspace{2mm}
+
+Knowing whether would "enroll under canvass" _predicts_ whether canvassed!
+
+\pause 
+$Pr(\text{Canvass} = \text{Yes} | \text{Would if Canvassed} = \text{Yes}) = \frac{2}{3}$  
+
+\pause 
+But 
+$Pr(\text{Canvass} = \text{Yes} | \text{Would if Canvassed} = \text{No}) = 0$
+
+
+
+## When comparing two groups **does** recover truth
+
+\large
+
+Here, potential outcomes do **not** help predict Canvass:
+
+\large
+\begin{center}
+\begin{tabular}{ccccc}
+ & & Would Enroll if & Would Enroll if  & \\
+Citizen & Canvass? & Canvass? & No Canvass? & Enroll \\ \hline
+1 & Yes & Yes & \alert{(Yes)} &  Yes \\
+2 & Yes & Yes & \alert{(No)} &  Yes \\
+3 & No & \alert{(Yes)} & Yes &  Yes \\
+4 & No &\alert{(Yes)} & No &  No
+\end{tabular}
+\end{center}
+
+\pause 
+
+Knowing whether enroll if canvass not predictive.
+
+\pause 
+
+>- What is the _true_ causal effect of canvass?  
+>- $\frac{4}{4} - \frac{2}{4} = \frac{2}{4} = \frac{1}{2}$
+>- What would we _observe_ as the effect of canvass?
+>- $\frac{2}{2} - \frac{1}{2} = \frac{1}{2}$
+
+\pause 
+
+Good! \smiley
+
+
+
+## When does comparing groups recover truth?
+
+
+<!-- Formally, $Y_1, Y_0 \indep T$, or $E(Y_1, Y_0) = E(Y_1, Y_0 | T)$) -->
+
+\Large
+
+Neither _potential outcome_ should help predict treatment/intervention.  \newline  \pause 
+
+\vspace{4mm}
+
+True underlying responses in "Canvass" group $=$ 
+True underlying responses in "No Canvass" group
+
+***
+
+\Large 
+
+(Note: _observed_ outcomes can predict treatment.)  \newline \pause
+
+That's the goal of an intervention!  \pause 
+
+- Aspirin $\implies$ headache!  
+- Canvass $\implies$ turnout!  
+- Insurance $\implies$ health spending! 
+- CBT $\implies$ remission! 
+
+\pause 
+
+But, full schedule of true underlying responses should **not** predict treatment.
+
+
+
+## When does comparing groups recover truth?
+
+\LARGE
+
+How to ensure potential outcomes won't predict treatment?\newline  \pause 
+
+\vspace{4mm}
+
+How to _assign_ treatment so it won't predict potential outcomes?
+
+
+## When does comparing groups recover truth?
+
+\large
+
+Possible _assignment mechanisms_:  
+
+\pause 
+
+\begin{itemize}
+\item Let Citizens decide whether to get Canvass \pause 
+\item[] (But, those who choose Canvass will Enroll anyway) \pause 
+\item[] (We will estimate {\it too large} effect) \pause 
+\item Let Party decide whom gets Canvass \pause 
+\item[] (But, Party will only Canvass those it will affect) \pause
+\item[] (We will estimate {\it too large} effect) \pause 
+\item What if you {\it randomly} select whom gets Canvass? \pause 
+\item[] (``Citizen was Canvassed'' won't help guess pot. out.) \pause 
+\item[] (We will estimate {\it correct} effect)
+\end{itemize}
+
+# The Potential Outcomes Model
+
+
+## What is Causal Inference?
+
+\large
+
+>- ``Effects of causes\text{''}
+
+\pause 
+\vspace{5mm}
+
+> The objective is to determine for some population of units \ldots the 'typical' causal effect of the [treatment vs. control conditions] on a dependent variable $Y$.
+\hspace{80mm} ---Rubin (1974)
+
+\pause 
+
+>- A "causal effect" is a comparative statement
+
+## What is Causal Inference?
+
+\Large
+
+>- Central definition for causal inference:  
+\quad ``a _well-defined_ treatment\text{''}
+>- Units must be ``potentially exposable\text{''} to treatment
+>- ``No causation without manipulation\text{''}
+>- Timing of treatment: outcomes vs. covariates
+>- Exclusivity of treatment (to unit)
+>- Excludability (assignment effect only via Tr)
+>- One study, one causal effect \pause (roughly)
+
+
+
+## The Potential Outcomes Model: Ideas
+
+\Large
+
+>- _Unit_: a particular case at a point in time
+>- _Treatment_: (putatively) causal variable of interest
+>- _Potential outcome_: outcome that would obtain if unit were to receive tr condition
+>- _Assignment mechanism_: means by which units come to be sorted into conditions
+
+## The Potential Outcomes Model: Ideas
+
+\Large
+
+Stable Unit Treatment Value Assumption (SUTVA)
+
+>- No versions of the treatment, varying in effectiveness
+>- No interference between units
+
+
+## The Potential Outcomes Model: Notation
+
+\Large
+
+>- Units: index $i \in \{1, \ldots, 2n\}$
+>- Binary treatment: $T_i \in \{0, 1\}$
+
+
+>- Pot outcome for $i$ under $T_i = 1$: $Y_{i1}$ or $Y_i(1)$
+>- Pot outcome for $i$ under $T_i = 0$: $Y_{i0}$ or $Y_i(0)$
+
+>- For vector of $Y_{i1} \quad \forall i$, write $Y_1$
+
+
+## The Potential Outcomes Model: Notation
+
+\large 
+
+Observed outcomes
+
+>- The observed outcome: $$Y_i = Y_i(1)\cdot T_i + Y_i(0)\cdot (1 - T_i)$$ \pause  
+(sometimes written $Y_i^{obs}$) \pause 
+>- If $T_i = 1$, $$Y_i = Y_i(1) \cdot 1 + Y_i(0)(1 - 1) = Y_i(1)$$
+>- If $T_i = 0$, $$Y_i = Y_i(1) \cdot 0 + Y_i(0)(1 - 0) = Y_i(0)$$
+
+\pause 
+
+\vspace{-3mm}
+
+The assignment mechanism _selects_ which potential outcome we observe.
+
+## The Potential Outcomes Model: Estimands
+
+Statistical language 
+
+>* _parameter_: unknown numeric value characterizing feature of
+  prob model (Greek; $\theta$, $\beta$) 
+>* _statistic_: quantity calculable from observed data.  A function. (Roman)
+>* _estimator_: statistic used to approximate/guess parameter ($\hat{\theta}$, $\hat{\beta}$)
+>* _estimand_: the parameter an estimator attempts to estimate 
+>* _estimate_: application of an estimator func to some obs data
+
+\pause 
+``The sample statistic $\bar{x}$ is an estimator of true mean
+param $\mu$".  
+
+\pause 
+
+$\mu$ is my estimand.  5.1 is my estimate.
+
+## The Potential Outcomes Model: Estimands
+
+\large
+
+For $i$, individual treatment effect
+
+$$\tau_i = Y_i(1) - Y_i(0)$$
+
+>- True treatment effect?
+>- Estimate?
+>- Observable?
+
+\pause 
+
+\vspace{3mm}
+
+\begin{center}
+We can never know.
+\end{center}
+
+<!-- ## Random variables and the Expectation -->
+
+<!-- \large -->
+
+<!-- _Random variable_ $X$ is a function mapping sample space to set of reals: $$X:\Omega \to \mathbb{R}$$  -->
+
+<!-- Random variables  -->
+
+<!-- >- summarize outcome of probabilistic/stochastic trial -->
+<!-- >- take numerical values.   -->
+
+<!-- \pause  -->
+
+<!-- E.g.,  -->
+
+<!-- >- Let $X =$ number of heads in 3 coin flips.  Is $X$ a random variable? -->
+<!-- >- Let $Y$ be outcome of two coin flips, $Y \in \{HH, TH, HT, TT\}$.  Is $Y$ a random variable? -->
+
+
+<!-- ## Expectation of a Random Variable -->
+
+<!-- The _expected value_ or _expectation_ of a random variable is mean of its outcomes, weighted by their probabilities.  For a discrete random variable, $$E(X) = \sum\limits_{i=1}^n x_ip(x_i)$$ For continuous random variable, $$E(X) = \int\limits_{-\infty}^{\infty} xp(x) dx$$ -->
+
+<!-- Expectation is **not** the sample mean from particular instantiation, a particular data set.  We use sample mean $\bar{x}$ to _estimate_ the expected value. -->
+
+<!-- ## Variance of a Random Variable -->
+
+<!-- The _variance_ of a random variable is mean of outcomes' squared deviations from expectation, weighted by their probabilities: -->
+
+<!-- \begin{eqnarray*} -->
+<!-- V(X) & = & E[(X - E(X))^2]\\	 -->
+<!-- & = & E(X^2) - (E(X))^2	 -->
+<!-- \end{eqnarray*} -->
+
+
+<!-- ## Properties of Expectation -->
+
+<!-- * $E(c) = c$  -->
+<!-- * $E(a+bX) = a+bE(X)$   -->
+<!-- * $E(X+Y) = EX + EY$ -->
+<!-- * If $X$ and $Y$ indep., then $E(XY) = E(X)E(Y)$ -->
+
+<!-- ## Properties of Variance -->
+
+<!-- * $Var(X) = E(X-EX)^2$  -->
+<!-- * $Var(X) = E(X^2)-(EX)^2$  -->
+<!-- * $Var(c) = 0$ -->
+<!-- * $Var(Y|X) = E(Y^2|X)-(E(Y|X))^2$  -->
+<!-- * If $X$ and $Y$ indep., then $Var(X+Y) = Var(X)+Var(Y)$  -->
+<!-- * If $X$ and $Y$ indep, then $Var(X-Y) = Var(X)+Var(Y)$  -->
+
+
+
+
+## The Potential Outcomes Model: Estimands
+
+>- Average treatment effect
+	\begin{displaymath}
+	ATE = \overline{Y_1 - Y_0} = \overline{Y_1} - \overline{Y_0}	
+	\end{displaymath}
+
+>- Average treatment effect for the treated
+	\begin{displaymath}
+	ATT = (\overline{Y_1} | T = 1) - (\overline{Y_0} | T = 1)
+	\end{displaymath} 
+
+
+## The Potential Outcomes Model: Estimands
+
+The average treatment effect (ATE):
+
+\begin{eqnarray*}
+\overline{\tau} = \overline{TE} = ATE &\equiv & \overline{Y_1 - Y_0} \\
+& = & \frac{1}{2n} \sum\limits_{i=1}^{2n} \left( Y_{i1} -
+  Y_{i0} \right) \\ \pause
+& = & \frac{1}{2n} \sum\limits_{i=1}^{2n} \left( Y_{i1} \right) - \frac{1}{2n} \sum\limits_{i=1}^{2n} \left( Y_{i0} \right) \\ \pause  
+& = & \overline{Y_1} - \overline{Y_0} 	%\\ \pause
+%& = & \frac{E(Y_1 | T_i =1 ) + E(Y_1 | T_i =0 )}{2} - \frac{E(Y_0 | T_i = 1) + E(Y_0 | T_i = 0)}{2}
+\end{eqnarray*} 
+
+\pause 
+
+>- True?
+>- Estimated?
+>- Observable?
+
+
+## The Potential Outcomes Model: Estimands
+
+\Large
+
+Statistical Independence \pause 
+
+Define 
+
+$$ Y \independent X$$ 
+as
+
+$$Pr(Y | X) = Pr(Y)$$  
+
+\pause 
+
+(Knowing $X$ doesn't change probability of $Y$)
+
+
+## The Potential Outcomes Model: Estimands
+
+Something we **can** calculate:
+
+If we know $(Y_1, Y_0)$ indep of $T$ \pause \newline
+(i.e., knowing true underlying response does **not** indicate $T$) \pause 
+
+Then,
+
+\pause 
+
+\begin{eqnarray*}
+\overline{Y_1} & = & (\overline{Y_1} | T = 1) \\ 
+\overline{Y_0} & = & (\overline{Y_0} | T = 0)	
+\end{eqnarray*}
+
+\pause 
+
+Then, can substitute 
+
+\begin{eqnarray*}
+	ATE & = & \overline{Y_1} - \overline{Y_0} \\
+	& = & (\overline{Y_1} | T = 1) - (\overline{Y_0} | T = 0)
+\end{eqnarray*}
+
+\pause 
+
+Observed diff in Tr and Co group means gives $\overline{TE}$!
+
+## Why Experiments?
+
+\large
+
+Random assignment of treatment promotes 
+
+$$(Y_1, Y_0) \independent T$$ \pause 
+
+When $(Y_1, Y_0)$ and $T$ independent, we can substitute things we know
+
+$$(\overline{Y_1} | T = 1) \text{ and } (\overline{Y_0} | T = 0)$$ \pause 
+
+for things we can _never_ know
+
+$$\overline{Y_1} \text{ and } \overline{Y_0}$$
+
+
+
+
+
+
+
+## Common Assumptions, Null Hyp's in Causal Inference
+
+\large
+
+\begin{itemize}
+\item Constant effect:
+
+$$\tau_i = Y_{i1}-Y_{i0} = \tau \quad \forall i$$
+\pause 
+
+\item Null hypothesis of no average effect:
+
+$$ATE = \overline{\tau} = 0$$
+\pause 
+
+\item Sharp null hypothesis of no effect: 
+
+$$\tau_i = 0$$
+\end{itemize}
+
+
+## Compliance with Treatment Assignment
+
+\note{Rubin's {\bf principal strata}}
+
+\large
+
+Sometimes, units don't follow assignment!
+
+\pause 
+\vspace{3mm}
+
+\begin{center}
+\begin{tabular}{ccc}
+Assigned Tr & Assigned Co & Type \\ \hline
+Tr & Co 	&  Complier \\  \pause 
+Tr & Tr & Always-taker \\ \pause 
+Co & Co & Never-taker \\ \pause 
+Co & Tr & Defier 
+\end{tabular}
+\end{center}
+
+
+
+## Compliance with Treatment Assignment
+
+\large
+
+Of course, we cannot observe $i$ assigned both Tr and Co.
+
+\pause 
+\vspace{3mm}
+
+\begin{center}
+\begin{tabular}{cccc}
+& & \multicolumn{2}{c}{Treatment Taken} \\
+& & Treatment & Control \\ \cline{3-4}
+Tr Assigned & Tr & Complier/Always & Never/Defier \\
+& Co & Always/Defier & Complier/Never \\
+\end{tabular}
+\end{center}
+
+
+## Common Estimates under Noncompliance
+
+Let $T_i$ be treatment _assigned_, $D_i$ be treatment _received_.
+
+\pause 
+
+>- Intent-to-treat effect (as-assigned)
+	\begin{eqnarray*}
+	ITT &=& (\overline{Y_1} | T = 1) - (\overline{Y_0} | T = 0) \\
+	&=& (\overline{Y_1} | T = 1, D(T=1)) - (\overline{Y_0} | T = 0, D(T=0)) 
+	\end{eqnarray*} 
+>- As-treated effect
+	\begin{eqnarray*}
+	ASTRE &=& (\overline{Y_1} | D = 1) - (\overline{Y_0} | D = 0)
+	\end{eqnarray*}
+
+## Unbiasedness
+
+\Large
+
+$$E(\hat{\theta}) = \theta$$
+
+\pause 
+\vspace{5mm}
+
+>- $E\left[ \widehat{\overline{Y_1 - Y_0}} \right] = \overline{Y_1 - Y_0}$
+>- $E\left[ \widehat{\beta_1} \right] = \beta_1$
+
+<!-- E.g., Avg est of ATE $=$ true ATE -->
+
+## Unbiasedness
+
+\Large
+
+What estimator used to estimate $\overline{Y_1 - Y_0}$?
+
+\pause 
+\vspace{5mm}
+
+The difference-in-means estimator.
+
+\pause 
+\vspace{5mm}
+
+$$\widehat{\overline{Y_1 - Y_0}} = \left(Y_1 | T_i = 1 \right) - 
+\left(Y_0 | T_i = 0 \right)$$
+
+\pause 
+Is it a "good" estimator?
+
+<!-- Strictly, these should be t_i = 1, e.g. (see GG) -->
+
+## Unbiasedness
+
+\Large
+
+The difference-in-means estimator is _unbiased_ for the true average treatment effect. 
+
+\vspace{8mm}
+
+\pause 
+(See `01-unbiased.R`)
+
+
+## Potential Outcomes Model: Estimands
+
+- Individual TE
+\begin{displaymath}
+\tau_i = Y_i(1) - Y_i(0)
+\end{displaymath}
+
+- Average treatment effect
+	\begin{displaymath}
+	ATE = E(Y_1 - Y_0) = E(Y_1) - E(Y_0)	
+	\end{displaymath}
+
+- Average treatment effect for the treated
+	\begin{displaymath}
+	ATT = E(Y_1 | T = 1) - E(Y_0 | T = 1)
+	\end{displaymath} 
+
+
+## Potential Outcomes Model: Estimands
+
+The average treatment effect (ATE):
+
+\begin{eqnarray*}
+E(Y_{1} - Y_{0}) & =&  \frac{1}{2n} \sum\limits_{i=1}^{2n} \left( Y_{i1} -
+  Y_{i0} \right) \\
+  & = & \frac{1}{2n} \sum\limits_{i=1}^{2n} \left( Y_{i1} \right) -
+  \frac{1}{2n} \sum\limits_{i=1}^{2n} \left(Y_{i0} \right)\\
+& = & E(Y_{1}) - E(Y_{0}) 	%\\
+%& = & \frac{E(Y_1 | T_i =1 ) + E(Y_1 | T_i =0 )}{2} - \\
+%&& \quad \frac{E(Y_0 | T_i = 1) + E(Y_0 | T_i = 0)}{2}
+\end{eqnarray*} 
+
+
+
+## Potential Outcomes Model: Estimands
+
+- If we know $(Y_1, Y_0)$ indep of $T$ 
+<!-- (as random assignment of Tr promotes),  \pause -->
+
+- Then,
+
+\begin{eqnarray*}
+E\left(Y_{1} \right) &=& E(Y_{1} | T = 1)\\ E\left(Y_{0} \right) & = & E(Y_{0} | T = 0)	
+\end{eqnarray*}
+
+- Then, can substitute 
+
+\begin{eqnarray*}
+	ATE & = & E(Y_{1}) - E(Y_{0}) \\
+	& = & E(Y_1 | T = 1) - E(Y_0 | T = 0)
+\end{eqnarray*}
+
+\pause 
+
+Observed diff in Tr and Co group means gives ATE!
+
+
+## Potential Outcomes Model: Estimands
+
+\large
+
+@holland86: "_prima facie effect_": $$E(Y_t | S = t) - E(Y_c | S = c)$$
+
+\pause 
+
+"It is important to recognize that $E(Y_t)$ and $E(Y_t | S=t)$ are _not_ the same thing \ldots"
+
+
+## Potential Outcomes Model: Estimands, Interpretation
+
+@gergre12:
+
+When $Y(1)$ and $Y(0)$ indep of $T$, 
+\begin{eqnarray*}
+ATE & = & E(Y_i(1) | T_i = 1) - E(Y_i(0) | T_i = 0) \\ \pause 
+& = & E(Y_i(1)| T_i = 1) \alert{- E(Y_i(0) | T_i = 1) +} \\
+&& \quad \alert{E(Y_i(0) | T_i = 1)} - E(Y_i(0) | T_i = 0) \\ \pause 
+& = & \left[E(Y_i(1)| T_i = 1) - E(Y_i(0) | T_i = 1) \right] +\\
+&& \quad \left[E(Y_i(0) | T_i = 1) - E(Y_i(0) | T_i = 0) \right] \\ \pause 
+& = & E(Y_i(1) - Y_i(0) | T_i = 1) + \\
+&& \quad E(Y_i(0) | T_i = 1) - E(Y_i(0) | T_i = 0) \\
+\end{eqnarray*}
+
+\pause 
+
+$$\underbrace{E(Y_i(1) - Y_i(0) | T_i = 1)}_{\text{ATT}} + \underbrace{E(Y_i(0) | T_i = 1) - E(Y_i(0) | T_i = 0)}_{\text{Selection Bias}} $$
+
+# Assignment of Treatment
+
+## What can be a Treatment?
+
+\Large
+
+<!-- >- Causal effects: relative to some other condition -->
+>- Timing clearly defined
+>- Covariates: causally prior to treatment
+>- "Attributes", "immutable characteristics": difficult to isolate
+<!-- >- Dose-response "biological gradient" evidence -->
+
+\pause 
+
+@senwas16 : "Race as a Bundle of Sticks: Designs that Estimate Effects of Seemingly
+Immutable Characteristics" (_elements_ of attributes varyingly manipulable)
+
+
+## Attributes
+
+"Causal effect of race"?
+
+```{r}
+#| echo: true
+#| eval: true
+#| label: readresume
+#| message: false
+#| warning: false
+
+data(resume, package = "qss")
+dim(resume)
+```
+
+\pause 
+
+```{r}
+#| eval: true
+#| warning: false
+
+kable(table(resume$race, resume$call))
+```
+
+\pause
+
+@bermul04: "Are Emily and Greg More Employable Than Lakisha and Jamal? A Field Experiment on Labor Market Discrimination"
+
+
+
+## Random Assignment Mechanisms
+
+\Large
+
+>- Simple/complete randomization  
+$\quad$ (Bernoulli trial, prob $\pi$)
+>- Complete randomization / random allocation  
+$\quad$ (fixed proportion to tr)
+>- Blocked randomizations  
+$\quad$ (fixed proportion to tr, w/in group)
+>- Cluster randomizations  
+$\quad$ (assignment at higher level)
+
+
+## The Potential Outcomes Model: Assignment
+
+\large
+
+Observed outcome: $Y_i = Y_i(1)\cdot T_i + Y_i(0)\cdot (1 - T_i)$ 
+
+\vspace{7mm}
+
+The assignment mechanism _selects_ which potential outcome we observe.
+
+\pause 
+
+\vspace{5mm}
+
+\normalsize
+
+(@gergre12 use $Y_i = Y_i(1)\cdot d_i + Y_i(0)\cdot (1 - d_i)$ to highlight that we observe pot outcome from treatment actually taken, not hypothetical or assigned treatment.)
+
+## The Potential Outcomes Model: Assignment
+
+\Large
+
+\begin{center}
+``Assignment mechanisms" are really missing-data-generating procedures.
+\end{center}
+
+## Ignorability
+
+Assignment mechanism is _ignorable_ if $Y_{mis}$ conditnly indep of $T$
+
+$$P(T | X, Y_{obs}, Y_{mis}) = P(T | X, Y_{obs})$$
+
+\pause 
+
+\vspace{5mm}
+
+Nothing in unobserved $Y_{mis}$ informs relationship between $Y_{obs}$, $T$.
+
+## Unconfoundedness
+
+Some ignorable mechanisms are _unconfounded_, too.
+
+$$P(T | X, Y_{obs}, Y_{mis}) = P(T| X)$$
+
+\pause 
+
+\vspace{5mm}
+
+Nothing in $Y$ informs $T$.
+
+\pause 
+
+\vspace{5mm}
+
+These are special cases of conditional independence.
+
+## An Assignment Mechanism
+
+Little & Rubin (2000):
+
+| Patient | Y   | T   |
+| :-----: | :-: | :-: |
+| 1       | 6   | 1   |
+| 2       | 12  | 1   |
+| 3       | 9   | 0   |
+| 4       | 11  | 0   |
+
+\pause 
+
+Clearly, treatment is harmful.  $\overline{Y(1)} - \overline{Y(0)} = 9 - 10 = -1$.
+
+## An Assignment Mechanism
+
+Little & Rubin (2000):
+
+
+| Patient | Y(0)        | Y(1)         | $\tau$       | T |
+| :-----: | :---------: | :----------: | :----------: | - |
+| 1       |  | 6            |   | 1 |
+| 2       |  | 12           |   | 1 |
+| 3       | 9           |   |  | 0 |
+| 4       | 11          |  |  | 0 |
+||||||
+| Mean    | 10          | 9            |   |   |
+
+
+Clearly, treatment is harmful.  $$\overline{Y(1) | T = 1} - \overline{Y(0) | T = 0} = 9 - 10 = -1$$
+
+
+## An Assignment Mechanism: Perfect Doctor
+
+Little & Rubin (2000):
+
+| Patient | Y(0)        | Y(1)         | $\tau$       | T |
+| :-----: | :---------: | :----------: | :----------: | - |
+| 1       | \alert{(1)} | 6            |   | 1 |
+| 2       | \alert{(3)} | 12           |   | 1 |
+| 3       | 9           | \alert{(8)}  |  | 0 |
+| 4       | 11          | \alert{(10)} |  | 0 |
+||||||
+| Mean    | 10          | 9            |   |   |
+
+
+\invisible{
+
+Clearly, treatment is beneficial:  $$\overline{Y(1)} - \overline{Y(0)} =9  - 6 = 3$$
+}
+
+
+## An Assignment Mechanism: Perfect Doctor
+
+Little & Rubin (2000):
+
+
+| Patient | Y(0)        | Y(1)         | $\tau$       | T |
+| :-----: | :---------: | :----------: | :----------: | - |
+| 1       | \alert{(1)} | 6            | \alert{(5)}  | 1 |
+| 2       | \alert{(3)} | 12           | \alert{(9)}  | 1 |
+| 3       | 9           | \alert{(8)}  | \alert{(-1)} | 0 |
+| 4       | 11          | \alert{(10)} | \alert{(-1)} | 0 |
+||||||
+| Mean    | 10          | 9            | \alert{(3)}  |   |
+
+
+\pause 
+
+Clearly, treatment is beneficial:  $$\overline{Y(1)} - \overline{Y(0)} =9  - 6 = 3$$
+
+\pause 
+
+This assg mechanism is non-ignorable, confounded.
+
+
+## An Assignment Mechanism: Perfect Doctor
+
+\LARGE
+
+So, the _assignment mechanism_ defines  \pause 
+
+how _causal_ our empirical estimate may be.
+
+
+***
+
+\huge
+
+\begin{center}
+Next:\\
+Inference for Experiments \\ \pause 
+(or, ``There is only one test")
+\end{center}
+
+***
+

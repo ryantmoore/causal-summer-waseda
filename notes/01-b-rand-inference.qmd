@@ -1,0 +1,523 @@
+---
+title: | 
+    | Randomization (Design-based) Inference 
+    | for Experiments
+date: "2024-08-20"
+date-format: iso
+author: Ryan T. Moore
+format:
+  beamer:
+    fonttheme: serif
+    include-in-header:
+      - file: zzz_beamer_header.tex
+    section-titles: true
+    slide_level: 2
+    toc: true
+institute: 
+  - American University
+link-citations: true 
+bibliography: ../admin/main.bib
+---
+  
+
+```{r}
+#| label: enviro
+#| echo: false
+#| message: false
+#| warning: false
+
+library(kableExtra)
+library(tidyverse)
+```
+
+# An Exercise
+
+***
+
+\Huge
+
+\begin{center}
+A volunteer?
+\end{center}
+
+\pause 
+
+\large
+
+\vspace{3mm}
+
+The task: select the 2 folders with messages \pause
+
+\vspace{3mm}
+>- What is our baseline expectation/model for this process?  
+>    - ``No x-ray vision. No ESP. Effect of messages on choice $=0$.\text{''}
+>- What is an alternative?
+>    - ``Some way to detect messages. Message location $\to$ choice.\text{''}
+
+\pause 
+
+\vspace{3mm}
+
+Select!
+
+## Randomization Inference
+
+The possible choices:
+\begin{center}
+$\blacksquare \blacksquare \square \square \square$ \quad $\square \blacksquare \square \blacksquare \square$\\
+$\blacksquare \square \blacksquare \square \square$ \quad $\square \blacksquare \square \square \blacksquare$\\
+$\blacksquare \square \square \blacksquare \square$ \quad \alert<2->{$\square \square \blacksquare \blacksquare \square$}\\
+$\blacksquare \square \square \square \blacksquare$ \quad $\square \square \blacksquare \square \blacksquare$\\
+$\square \blacksquare \blacksquare \square \square$ \quad $\square \square \square \blacksquare \blacksquare$\\
+\end{center}
+
+\pause 
+
+\begin{itemize}
+	\item You chose $\_\_\_$ and $\_\_\_$.  Let $X=$ number found. \pause 
+	\item What was $P(X \geq 2 | \text{no ESP})$?  \pause $\frac{1}{10} = 0.1$ \pause 
+	\item What was $P(X \geq 1 | \text{no ESP})$?  \pause $\frac{7}{10} = 0.7$ \pause 
+	\item What is ``prob result at least this extreme, given model of no effect\text{''}?  \pause 
+	\item Definition of $p$-value! \pause 
+	\item Valid, exact, with no distributional assumption, no large $n$.  \pause
+	\item {\it Randomization} creates dist'n of possible numbers correct 
+\end{itemize}
+
+## The Randomization Distribution of $X$
+
+\begin{center}
+\only<1>{\includegraphics[angle=0, width=4in]{figs/02-riHistogram}}
+\only<2>{\includegraphics[angle=0, width=4in]{figs/02-riHistogram2}}
+\only<3>{\includegraphics[angle=0, width=4in]{figs/02-riHistogram3}}
+\end{center}
+
+
+## Parametric Null Hypothesis Significance Testing
+
+\Large
+
+- Specify and assume $H_0$
+- Define $H_A$
+- Examine reference dist'n ($t$, $\chi^2$, \ldots) under $H_0$
+- Calculate $p$-value
+- Compare to some $\alpha$; reject $H_0$ if $p<\alpha$
+
+# Overview of Randomization Inference
+
+## Randomization Inference
+
+\Large 
+
+>- Specify and assume $H_0$  
+$\quad$ (sharp null of no treatment effect)
+>- Define $H_A$
+>- Create reference dist'n from all possible values of $X$ under $H_0$  
+$\quad$ (or at least a big sample of them)
+>- What prop. of possible values are ``at least as extreme as\text{''} observed?  
+$\quad \rightsquigarrow$ $p$-value!
+>- Compare to some $\alpha$; reject $H_0$ if $p<\alpha$
+>- CA ballot ordering effects (JASA 2006)
+
+
+## Randomization Inference
+
+\large 
+
+\center
+The RI $p$-value is $$p = \frac{\text{\# outcomes } \geq \text{as extreme as obs}}{\text{total \# outcomes}}$$
+
+\pause 
+
+or
+
+$$p = \frac{\text{\# randomizations producing extreme } \widehat{ATE}}{\text{total \# randomizations}}$$
+
+\pause 
+
+\vspace{2mm}
+
+How many randomizations are there?
+
+# Counting Principles
+
+## Combinations: Counting selected sets
+
+How many ways to **select** $k$ things from a set of $n$ things?
+
+$$_n C_k = \binom{n}{k} = \frac{_n P_k}{k!} = \frac{n!}{k!(n-k)!}$$
+\pause
+
+Suppose 5 units, $A$, $B$, $C$, $D$, $E$.
+
+>- How many ways to order? $_n P_k$: $ABCDE$, $ABCED$, \ldots $= 5 \cdot 4 \cdot 3 \cdot 2 \cdot 1 = 5! = 120$
+>- If only want 3 of 5? Divide by $2! = (n-k)!$  
+(removing permutations from last 2 slots)
+>- What if order doesn't matter? Divide by $3! = k!$  
+(6 permutations for $ABC$, but only one combination)
+
+
+
+## Combinations: Counting selected sets
+
+How many ways to choose 5 villages of 10 for treatment? \pause 
+
+$$_{10} C_5 = \binom{10}{5} = \frac{10!}{5!(10-5)!}$$
+\pause 
+
+$$\frac{10\cdot 9 \cdot 8 \cdot 7 \cdot 6}{5\cdot 4 \cdot 3 \cdot 2 \cdot 1} = 252$$
+
+
+## Common Assumptions, Null Hypotheses
+
+\large
+
+\begin{itemize}
+\item Constant effect:
+
+$$\tau_i = Y_{i1}-Y_{i0} = \tau \quad \forall i$$
+
+\item Null hypothesis of no average effect:
+
+$$ATE = \overline{\tau} = 0$$
+
+\item Sharp null hypothesis of no effect: 
+
+$$\tau_i = 0$$
+\end{itemize}
+
+# Examples
+
+## An Assignment Mechanism: Perfect Doctor
+
+\large 
+
+Calculate RI $p$-value for Perfect Doctor, under sharp null. 
+
+
+| Patient | Y(0)        | Y(1)         | $\tau$       | T |
+| :-----: | :---------: | :----------: | :----------: | - |
+| 1       | \alert{(1)} | 6            | \alert{(5)}  | 1 |
+| 2       | \alert{(3)} | 12           | \alert{(9)}  | 1 |
+| 3       | 9           | \alert{(8)}  | \alert{(-1)} | 0 |
+| 4       | 11          | \alert{(10)} | \alert{(-1)} | 0 |
+||||||
+| Mean    | 10          | 9            | \alert{(3)}  |   |
+
+
+\pause 
+\vspace{3mm}
+
+(See `01-ri-perfect-dr.R`)
+
+## RI versus the $t$-test
+
+\Large
+
+Perfect Doctor:
+
+- RI: $p = 1$
+- `t.test()`: $p \approx 0.8$
+- "If no tr effect, then this result typical"
+
+\pause
+
+\vspace{4mm}
+
+\large
+
+(Odd logic of NHST: "assume false thing, how strange is data?")
+
+
+## Randomization Inference, Example 2
+
+Assumed table of potential outcomes:
+
+\begin{center}
+\begin{tabular}{ccccc}
+	Village & $T$ & \% if Female & \% if Male &  $\tau_i$ \\
+	& &  Head, $Y(1)$ &  Head, $Y(0)$ &  \\ \hline
+	1 & $\_$ & 15 & 10 & 5\\
+	2 & $\_$ & 15 & 15 & 0 \\
+	3 & $\_$ & 30 & 20 & 10 \\
+	4 & $\_$ & 15 & 20 & -5\\
+	5 & $\_$ & 20 & 10 & 10 \\
+	6 & $\_$ & 15 & 15 & 0 \\
+	7 & $\_$ & 30 & 15 & 15\\ \hline
+Average	 && 20 & 15 & 5
+\end{tabular}
+\end{center}
+
+
+## Randomization Inference, Example 2
+
+Suppose we randomly select 2 villages to have female-headed councils, and observe
+
+\begin{center}
+\begin{tabular}{ccccc}
+	Village & $T$ & \% if Female & \% if Male &  $\tau_i$ \\
+	& &  Head, $Y(1)$ &  Head, $Y(0)$ &  \\ \hline
+	1 & F & 15 & & \\
+	2 & M &  & 15 &  \\
+	3 & M &  & 20 &  \\
+	4 & M &  & 20 & \\
+	5 & M &  & 10 &  \\
+	6 & M &  & 15 & \\
+	7 & F & 30 &  & \\ \hline
+Average	 && 22.5 & 16 & 6.5
+\end{tabular}
+\end{center}
+
+
+## Randomization Inference, Example 2
+
+We assume the _sharp null_ hypothesis (assumed values in \textcolor{red}{red}): 
+
+\begin{center}
+\begin{tabular}{ccccc}
+	Village & $T$ & \% if Female & \% if Male &  $\tau_i$ \\
+	& &  Head, $Y(1)$ &  Head, $Y(0)$ &  \\ \hline
+	1 & F & 15 & {\color{red} 15} & {\color{red} 0}\\
+	2 & M & {\color{red} 15} & 15 & {\color{red} 0} \\
+	3 & M & {\color{red} 20} & 20 & {\color{red} 0} \\
+	4 & M & {\color{red} 20} & 20 & {\color{red} 0}\\
+	5 & M & {\color{red} 10} & 10 & {\color{red} 0} \\
+	6 & M & {\color{red} 15} & 15 &{\color{red} 0} \\
+	7 & F & 30 & {\color{red} 30} & {\color{red} 0} \\ \hline
+Average	 &&  &  & {\color{red} 0}
+\end{tabular}
+\end{center}
+
+
+## Randomization Inference, Example 2
+
+Then we estimate what the observed ATE would be for all the possible random assignments.
+
+First,
+
+\begin{center}
+\begin{tabular}{ccccc}
+	Village & $T$ & \% if Female & \% if Male &  $\tau_i$ \\
+	& &  Head, $Y(1)$ &  Head, $Y(0)$ &  \\ \hline
+	1 & F & 15 & & \\
+	2 & M &  & 15 &  \\
+	3 & M &  & 20 &  \\
+	4 & M &  & 20 & \\
+	5 & M &  & 10 &  \\
+	6 & F & {\color{red} 15} &  & \\
+	7 & M &  & {\color{red} 30} &  \\ \hline
+Average	 && 15 & 19 & -4
+\end{tabular}
+\end{center}
+
+
+## Randomization Inference, Example 2
+
+Second,
+
+\begin{center}
+\begin{tabular}{ccccc}
+	Village & $T$ & \% if Female & \% if Male &  $\tau_i$ \\
+	& &  Head, $Y(1)$ &  Head, $Y(0)$ &  \\ \hline
+	1 & F & 15 &  & \\
+	2 & M &  & 15 &  \\
+	3 & M & & 20 &  \\
+	4 & M &  & 20 & \\
+	5 & F & {\color{red} 10} &  &  \\
+	6 & M &  & 15 & \\
+	7 & M & & {\color{red} 30} &  \\ \hline
+Average	 && 12.5 & 20 & -7.5
+\end{tabular}
+\end{center}
+
+
+## Randomization Inference, Example 2
+
+\ldots, \pause and all the others.  The full set of $\frac{7!}{2!5!} = 21$ differences in means:
+
+\begin{center}
+\begin{tabular}{ccc}
+& Estimate & Frequency  \\ \hline
+& -7.5 & 3 	   \\
+& -4 & 5 \\
+& -0.5 & 6 \\
+& 3 & 2 \\
+& 6.5 & 3 \\
+& 10 & 2 \\ \hline
+Total & & 21
+\end{tabular}
+\end{center}
+
+\pause
+
+How many are at least as extreme as my 6.5? \pause
+
+\vspace{2mm}
+Two-sided (``women's \% $\neq$ men's\text{''}): $p = \frac{8}{21} \approx 0.38$ \pause
+
+\vspace{2mm}
+One-sided (``women's \% $>$ men's\text{''}): $p = \frac{5}{21} \approx 0.24$
+
+
+## Randomization Inference
+
+\Large
+
+These $p$-values
+
+>- are exact, not approximate
+>- do not require asymptotic large $N \to \infty$
+>- need no distrib assump (normal as $N \to \infty$)
+>- do not require calculating standard error (SE)
+>- _Randomization_ creates distribution of possible numbers correct/treatment effects
+>- can be approximated by sampling
+>    - Assigning 500 of 1000 respondents to treatment?  Randomly generate 10,000 assignments from $2.7 \times 10^{299}$ possible \ldots
+>- can be computationally intensive
+
+
+## Randomization Inference
+
+\large
+
+- Resume audit study, @bermul04
+
+```{r}
+#| label: readresume
+#| echo: false
+#| message: false
+#| warning: false
+
+data(resume, package = "qss")
+kable(table(resume$race, resume$call))
+```
+
+\pause 
+
+- Only possible values: $\tau_i \in \{-1, 0, 1\}$
+
+\pause 
+
+```{r}
+#| message: false
+#| warning: false
+
+resume |> group_by(race) |>
+  summarise(call_rate = mean(call))
+```
+
+
+***
+
+\large
+
+>- Assume the sharp null $\tau_i = 0$ for every employer.
+>- $H_0: \mu_{\text{black name}} = \mu_{\text{white name}}$
+>- $H_A: \mu_{\text{black name}} \neq \mu_{\text{white name}}$
+>- Create reference dist'n of all possible assignments
+
+\pause 
+
+$$_{4870} C_{2435} = \binom{4870}{2435} = \frac{4870\cdot 4869 \cdot \ldots \cdot 2436}{2435!}$$ 
+
+\pause 
+
+$\approx 1.1 \times 10^{1464}$
+
+\pause 
+
+(There are $\approx 10^{86}$ fundamental particles in the universe.)
+
+\pause 
+
+>- Let's do 1000, or 100,000 -- something reasonable
+>- See `01-ri-resume-donate.R`
+
+
+***
+
+\begin{center}
+\only<1>{\includegraphics[angle=0, width=3.5in]{figs/02-riHist_resume1}}
+\only<2>{\includegraphics[angle=0, width=3.5in]{figs/02-riHist_resume2}}
+\end{center}
+
+## Randomization Inference
+
+\Large
+
+- @gergre12 donations example, p. 65
+- Possible values $\tau_i \in (-\infty, \infty)$
+- $Y_1$, $Y_0$, $\tau$ likely very skewed
+- See `01-ri-resume-donate.R`
+
+
+***
+
+\begin{center}
+\only<1>{\includegraphics[angle=0, width=3.5in]{figs/02-riHist_donate1}}
+\only<2>{\includegraphics[angle=0, width=3.5in]{figs/02-riHist_donate2}}
+\end{center}
+
+## The RI Confidence Interval
+
+\large
+
+Recall that 
+
+\begin{center}
+``reject $H_0$ at $\alpha = 0.05$'' $\equiv$ ``$H_0$ falls outside 95\% CI''
+\end{center}
+
+\pause 
+\vspace{5mm}
+
+Create RI confidence ints ("invert the randomization test"):
+
+>- Posit $H_0: \tau = \tau^* \in \{ \ldots, -2, -1, 0, 1, 2, \ldots \}$
+>- RI test whether to reject $H_0$
+>- If not, then $\tau^*$ is in CI
+>- CI consists of set of $\tau^*$ not unusual, given data
+>- See `01-ri-resume-donate.R`
+
+***
+
+\LARGE
+
+We can adapt this testing procedure for any quantity we want to test!
+
+\pause 
+
+>- Difference in variances
+>- Regression coefficient
+>- Sum of two regression coefficients
+>- Ratio of skewnesses
+>- \ldots (any crazy thing!)
+
+\pause 
+No need to derive the correct asymptotic standard error (SE).
+
+
+***
+
+\Huge
+
+\center
+"There is only one test."
+
+\pause 
+\vspace{1cm}
+
+\huge 
+
+
+-- Allen Downey, posit::conf(2024)
+
+***
+
+\huge
+
+\begin{center}
+Next:\\
+Covariates in Experiments
+\end{center}
+
+***
+

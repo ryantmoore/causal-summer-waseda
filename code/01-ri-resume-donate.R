@@ -1,9 +1,14 @@
 ## RI Hypothesis Tests and Confidence Intervals
 ## Ryan T. Moore
 ## First: 2017-07-06
-## Last: 2024-07-23
+## Last: 2024-08-20
 
 # Preliminaries -----------------------------------------------------------
+
+# To install package {qss}, 
+# 1. install.packages("devtools"), then
+# 2. devtools::install_github("kosukeimai/qss-package")
+# (See also https://github.com/kosukeimai/qss)
 
 library(qss)
 library(tidyverse)
