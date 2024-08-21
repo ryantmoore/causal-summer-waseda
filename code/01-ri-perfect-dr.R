@@ -150,14 +150,14 @@ ri_pvalue <- function(y1, y0, rand_mat, obs_tr){
 
   diffs <- rep(NA, nrow(rand_mat))
 
-  obs_te <- sd(y1[obs_tr == 1]) - sd(y0[obs_tr == 0])
+  obs_te <- mean(y1[obs_tr == 1]) - mean(y0[obs_tr == 0])
 
   for(i in 1:nrow(rand_mat)){
 
-    diff_sd <- sd(y1[rand_mat[i, ] == 1]) -
-      sd(y0[rand_mat[i, ] == 0])
+    diff_means <- mean(y1[rand_mat[i, ] == 1]) -
+      mean(y0[rand_mat[i, ] == 0])
 
-    diffs[i] <- diff_sd
+    diffs[i] <- diff_means
 
   }
 
