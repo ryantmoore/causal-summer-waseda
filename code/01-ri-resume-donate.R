@@ -86,7 +86,6 @@ t.test(call ~ race, data = resume)
 
 # RI for Gerber Green Donations Example, Box 3.7, page 65 -----------------
 
-
 # Prep data
 donate <- tibble(tr = rep(1:0, each = 10),
                  donation = c(500, 100, 100, 50, 25, 25, 0, 0, 0, 0, 
