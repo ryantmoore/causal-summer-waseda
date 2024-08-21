@@ -1,0 +1,1694 @@
+---
+title: | 
+    | Randomized Experiments and Covariates
+header-includes:
+  - \usepackage{datetime}
+  - \usepackage{amsmath}
+  - \usepackage{wasysym}
+  - \usepackage{color}
+  - \AtBeginEnvironment{CSLReferences}{\scriptsize}
+date: "2024-08-21"
+author: Ryan T. Moore
+institute: American University
+output:
+  beamer_presentation:
+    slide_level: 2
+    toc: true
+    fonttheme: serif
+    includes:
+      in_header: zzz_beamer_header.tex
+  pdf_document:
+    fig_caption: true
+    number_sections: true
+    urlcolor: blue
+link-citations: yes 
+bibliography: "../admin/main.bib"
+---
+  
+```{r knitr options, echo=FALSE, warning=FALSE}
+# Encoding required for proper knitr rendering
+options(encoding = "native.enc")
+```
+
+```{r enviro, warning = FALSE, results = 'hide', echo = FALSE, message = FALSE}
+
+library(blockTools)
+library(knitr)
+library(grid)
+library(gridExtra)
+library(devtools)
+library(modelr)
+library(png)
+library(tidyverse) 
+library(xtable)
+```
+
+<!-- Include screenshot: -->
+<!-- ```{r fig.width=4.4, echo=FALSE} -->
+<!-- img <- readPNG("figs/viz-practice.png") -->
+<!-- grid.raster(img) -->
+<!-- ``` -->
+
+<!-- Include a pdf fig: -->
+
+<!-- \begin{center} -->
+<!-- \includegraphics[height=3.1in]{figs/viz-facet-MedNoneRace.pdf} -->
+<!-- \end{center} -->
+
+# Motivating Example 
+
+## Random Assignment Mechanisms
+
+\Large
+
+- Simple/complete randomization  
+$\quad$ (Bernoulli trial, prob $\pi$)
+- Complete randomization / random allocation  
+$\quad$ (fixed proportion to tr)
+- Blocked randomizations  
+$\quad$ (fixed proportion to tr, w/in group)
+- Cluster randomizations  
+$\quad$ (assignment at higher level)
+
+
+
+## Motivation: A Causal Inference Question
+
+\Large
+"Would a canvassing policy increase enrollment in a health insurance program?"
+
+\pause 
+\vspace{3mm}
+
+\begin{center}
+\begin{tabular}{cccc}
+Precinct & Party & Canvass? & Enroll \%  \\ \hline
+1 & Dem &  &  \\
+2 & Dem &  &  \\
+3 & Rep &  &  \\
+4 & Rep &  &  \\ 
+\end{tabular}
+\end{center}
+
+
+## Motivation: A Causal Inference Question
+
+\large
+
+Suppose we observationally measure
+
+\vspace{5mm}
+
+\begin{center}
+\begin{tabular}{cccc}
+Precinct & Party & Canvass? & Enroll \%  \\ \hline
+1 & Dem & Yes & 60 \\
+2 & Dem & Yes & 70 \\
+3 & Rep & No & 20 \\
+4 & Rep & No & 30 \\ \hline
+&& Diff in Means: & $40$ \\
+&& (Yes $-$ No) &
+\end{tabular}
+\end{center}
+
+\pause 
+
+Causal claims? Concerns?
+
+
+## Motivation: A Causal Inference Question
+
+\large
+
+Suppose we \alert{randomly assign} 2 Tr, 2 Co, and measure
+
+\vspace{5mm}
+
+\begin{center}
+\begin{tabular}{cccc}
+Precinct & Party & Canvass? & Enroll \%  \\ \hline
+1 & Dem & Yes & 60 \\
+2 & Dem & Yes & 70 \\
+3 & Rep & No & 20 \\
+4 & Rep & No & 30 \\ \hline
+&& Diff in Means: & $40$ \\
+&& (Yes $-$ No) &
+\end{tabular}
+\end{center}
+
+\pause 
+
+Causal claims? Concerns?
+
+***
+
+\large
+
+We knew: do better than draw 
+
+$$T_i \sim \text{Bern}(\pi)$$ 
+
+\pause
+
+>- $\rightsquigarrow$ sample imbalance
+>- Might get no treateds!
+
+\pause 
+
+Seriously?  \pause Well, \ldots
+
+\pause 
+
+\vspace{-20mm}
+
+```{r echo=FALSE}
+img <- readPNG("figs/03-unlucky.png")
+grid.raster(img)
+```
+
+
+
+***
+
+\large
+
+We knew: do better than draw 
+
+$$T_i \sim \text{Bern}(\pi)$$ 
+
+- $\rightsquigarrow$ sample imbalance
+- Might get no treateds!
+- CLT SE for diff in means:
+
+\pause 
+
+\footnotesize
+
+$$SE(\widehat{ATE}) = \sqrt{\frac{1}{N-1} \left[ \frac{m \mathrm{Var}(Y_i(0))}{N-m} + \frac{(N-m)\mathrm{Var}(Y_i(1))}{m} +
+2\mathrm{Cov}(Y_i(0), Y_i(1)) \right]}$$
+
+\large
+
+- If $\mathrm{Var}(Y_i(0)) = \mathrm{Var}(Y_i(1))$, allocate units equally.  \pause
+Say 5 treated, 4 control.  What to do with 10th village? \pause
+	\begin{itemize}
+		\item $10^{th} \to$ control: $SE: \sqrt{\frac{5}{5} + \frac{5}{5}} = \sqrt{2}$  \pause
+		\item $10^{th} \to$ treated: $SE: \sqrt{\frac{6}{4} + \frac{4}{6}} = \sqrt{2.66}$
+	\end{itemize} \pause
+- If $\mathrm{Var}(Y_i(0)) \neq \mathrm{Var}(Y_i(1))$, allocate $\to$ higher-Variance condition
+
+***
+
+\footnotesize
+
+$$SE(\widehat{ATE}) = \sqrt{\frac{1}{N-1} \left[ \frac{m \mathrm{Var}(Y_i(0))}{N-m} + \frac{(N-m)\mathrm{Var}(Y_i(1))}{m} +
+2\mathrm{Cov}(Y_i(0), Y_i(1)) \right]}$$
+
+\large
+
+- If $\mathrm{Cov}(Y_i(0), Y_i(1)) > 0$, larger SE, less precision
+- If $\mathrm{Cov}(Y_i(0), Y_i(1)) < 0$, smaller SE, _more_ precision
+
+\pause 
+
+Demonstration:
+
+\begin{center}
+\begin{tabular}{cccc}
+Unit & $Y_0$ & $Y_1$ ($+$ cov) & $Y_1$ ($-$ cov)  \\ \hline
+1 & 0 & 0 & 10 \\
+2 & 5 & 5 & 5 \\
+3 & 10 & 10 & 0 \\ \hline
+Means & 5 & 5 & 5 \\
+\end{tabular}
+\end{center}
+
+\pause 
+Suppose assign 1 to Tr, 2 to Co.  
+\pause $\widehat{ATE}_{+ \textrm{cov}} = -7.5, 0, 7.5$  
+\pause $\widehat{ATE}_{- \textrm{cov}} = 2.5, 0, -2.5$ \pause (less variance!)
+
+
+
+## Example: Canvassing and Enrollment
+
+\large
+
+But, is obs difference causal? 
+
+\pause
+\vspace{5mm}
+
+What do we really want to know?
+
+\pause
+\vspace{5mm}
+
+Does canvassing actually _change_ enrollment in precinct?  
+(Or, just Party $\to$ Enrollment?)
+
+\pause
+\vspace{5mm}
+
+What _would have_ happened to "No" precincts if "Yes"?  
+
+\pause
+\vspace{5mm}
+
+What would have happened under _other_ conditions?
+
+
+## Example: Canvassing and Enrollment
+
+\Large
+Suppose we can know both _potential outcomes_ \ldots
+
+\vspace{5mm}
+
+\large
+
+\begin{center}
+\begin{tabular}{ccccc}
+&&& Enroll \% & Enroll \% \\
+Precinct & Party & Canvass? & if No Canvass & if Canvass   \\ \hline
+1 & Dem & $\_$ & 20 & 60 \\
+2 & Dem & $\_$ & 30 & 70 \\
+3 & Rep & $\_$ & 20 & 30 \\
+4 & Rep & $\_$ & 30 & 40 \\ \hline
+&& Means: & 25 & 50 \\
+\end{tabular}
+\end{center}
+\pause
+
+\Large
+$\text{ATE} = 50-25=25$
+
+\pause
+
+(True or an estimate?)
+
+
+## Example: Canvassing and Enrollment
+
+\Large
+Another way to think about same information:
+
+\vspace{5mm}
+
+\small
+
+\begin{center}
+\begin{tabular}{cccccc}
+&&& Enroll \% & Enroll \% & \alert{True Precinct} \\
+Precinct & Party & Canvass? & if No Canvass & if Canvass & \alert{Effect}  \\ \hline
+1 & Dem & $\_$ & 20 & 60 & \alert{40}\\
+2 & Dem & $\_$ & 30 & 70 & \alert{40} \\
+3 & Rep & $\_$ & 20 & 30 & \alert{10} \\
+4 & Rep & $\_$ & 30 & 40 & \alert{10}\\ \hline
+&& Means: & 25 & 50 & \alert{25}\\
+\end{tabular}
+\end{center}
+
+\vspace{5mm}
+
+\Large 
+$\text{ATE} = (40 + 40 + 10 + 10)/4=25$
+
+
+## The Fundamental Problem of Causal Inference
+
+\large
+
+We can't observe both "Canvassed" and "Not Canvassed" for a precinct.
+
+\vspace{10mm}
+
+We can't observe both _potential outcomes_ (_counterfactuals_). 
+
+\vspace{10mm}
+So, how can we get a good causal estimate?
+
+
+## Example: Canvassing and Enrollment
+
+\large
+Suppose we observe \ldots
+
+\vspace{5mm}
+
+\begin{center}
+\begin{tabular}{ccccc}
+&&& Enroll \% & Enroll \% \\
+Precinct & Party & Canvass? & if No Canvass & if Canvass   \\ \hline
+1 & Dem & Yes &  & 60 \\
+2 & Dem & Yes &  & 70 \\
+3 & Rep & No & 20 &   \\
+4 & Rep & No & 30 &  \\ \hline
+&& Means: & 25 & 65 \\
+\end{tabular}
+\end{center}
+
+\vspace{5mm}
+
+$\text{Estimated ATE} = 65-25 = 40$  \pause  $\quad$ \frownie $\quad$ (too big)
+
+
+
+## Example: Canvassing and Enrollment
+
+\large
+Or, we could have observed \ldots
+
+\pause 
+\vspace{5mm}
+
+\begin{center}
+\begin{tabular}{ccccc}
+&&& Enroll \% & Enroll \% \\
+Precinct & Party & Canvass? & if No Canvass & if Canvass   \\ \hline
+1 & Dem & Yes &  & 60 \\
+2 & Dem & No & 30 &  \\
+3 & Rep & Yes &  & 30   \\
+4 & Rep & No & 30 &  \\ \hline
+&& Means: & 30 & 45 \\
+\end{tabular}
+\end{center}
+
+\vspace{5mm}
+
+$\text{Estimated ATE} = 45-30 = 15$ \pause $\quad$ \frownie $\quad$ (too small; closer)
+
+
+## Example: Canvassing and Enrollment
+
+\Large
+In our random allocation, possible data were
+
+\begin{center}
+\begin{tabular}{cc}
+Assignments & Est ATE \\ \hline
+YYNN & 40  \\ \pause
+NYNY & 35 \\
+YNNY & 25 \\
+NYYN & 25 \\
+YNYN & 15 \\
+NNYY & 10
+\end{tabular}
+\end{center}
+
+\pause
+
+>- Some closer to truth
+>- $E(\widehat{\bar{\tau}}) = \frac{1}{6}\cdot 40 + \frac{1}{6}\cdot 35 + \frac{1}{3}\cdot 25 + \frac{1}{6}\cdot 15 + \frac{1}{6}\cdot 10 = 25 = \bar{\tau}$  \pause
+(unbiased)
+
+
+## A Problem
+
+\large
+
+In practice, we don't know all potential outcomes.
+
+\pause
+
+Two assignments (YYNN and NNYY) leave treatment perfectly confounded with party. 
+
+\pause
+
+We can never see all of $Y_1$, $Y_0$. But we can see all of $X$!
+
+\pause
+
+Let's ensure $X$ does not predict $T$.
+
+
+## A Solution
+
+\large
+_Blocking_:
+
+\vspace{5mm}
+
+Creating pre-treatmnt groups that look same on _predictors_.   \pause
+
+\vspace{3mm}
+
+\begin{center}
+\begin{tabular}{ccccc}
+&&& Enroll \% & Enroll \% \\
+Precinct & Party & Canvass? & if No Canvass & if Canvass   \\ \hline
+1 & \color{blue}{Dem} & \only<4>{Y} &  & \only<4>{60} \\
+2 & {\color{blue}Dem} & \only<4>{N} & \only<4>{30} &  \\
+3 & \color{red}{Rep} & \only<4>{N} & \only<4>{20} &    \\
+4 & \color{red}{Rep} & \only<4>{Y} &  & \only<4>{40} \\ \hline
+\end{tabular}
+\end{center}
+\pause
+
+\vspace{3mm}
+
+(Then, randomize \alert{within} groups.)
+
+
+## Example: Canvassing and Enrollment
+
+\large
+Blocking restricts possible data to
+
+\begin{center}
+\begin{tabular}{cc}
+Assignments & Est TE \\ \hline
+\color{lightgray}{\sout{YYNN}} & \color{lightgray}{\sout{40}}  \\
+{\bf NYNY} & {\bf 35} \\
+{\bf YNNY} & {\bf 25} \\
+{\bf NYYN} & {\bf 25} \\
+{\bf YNYN} & {\bf 15} \\
+\color{lightgray}{\sout{NNYY}} & \color{lightgray}{\sout{10}}
+\end{tabular}
+\end{center}
+\pause
+
+Estimates have \alert{less variance}, are \alert{closer to true} ATE.  \pause
+
+Under random allocation, 5 possible estimates: 40, 15, 25, 35, 10. 
+
+Blocking \alert{restricts} to 3 best: 15, 25, 35.
+
+\pause
+
+\begin{center}
+\smiley
+\end{center}
+
+## How many randomizations are there?
+
+\large
+
+Suppose $n = 4$ units
+
+>- Bernoulli randomization: $2^n = 2^4 = 16$
+>- Random allocation: $_n C_{n/2} = _4C_2 = \frac{4!}{2!(4-2)!} = 6$
+>- Blocked pairs randomization: $2^{\frac{n}{2}} = 2^{\frac{4}{2}} = 4$
+
+
+# Blocking: Randomization Improved
+
+<!-- %\subsection{Nonsequential Experiments} -->
+
+## Blocking: Randomization Improved
+
+\large
+>- Randomization _should_ balance potential outcomes $Y(1)$, $Y(0)$, by design
+>- But, can't check directly.  False in example: $T \to Y(1)$
+>- (And, works better w/ bigger samples, fewer subgroups of interest)
+>- Can't observe all potential outcomes
+>- **Can** observe $X$'s, predictors of $Y$
+>- Check whether $T \stackrel{?}{\Rightarrow} X$
+
+            
+<!-- ## Balance -->
+<!--             %\framesubtitle{Hertzman \& Stolle 2013}  -->
+<!--             %\begin{center} -->
+<!--             %\includegraphics[width=4.5in]{figs/balStolle.png} -->
+<!--             %\end{center} -->
+<!--             %} -->
+            
+<!-- ## Balance -->
+<!--             %\framesubtitle{Hansen 2004} -->
+<!--             % -->
+<!--             %\begin{center} -->
+<!--             %\includegraphics[height=3in]{figs/balHansen04.png} -->
+<!--             %\end{center} -->
+
+<!-- ## Balance -->
+<!--             %\framesubtitle{Moore \& Moore 2013} -->
+<!--             % -->
+<!--             %\vspace{-2mm} -->
+<!--             %\begin{center} -->
+<!--             %\includegraphics[height=3in]{figs/balMooMoo13.png} -->
+<!--             %\end{center} -->
+
+            
+<!-- ## How to Ensure that Comparing Groups is OK? -->
+<!-- \Large -->
+
+<!-- Can we do more to ensure {\it treatment} does not predict {\it potential outcomes}?   -->
+
+<!-- \pause -->
+
+<!-- \vspace{10mm} -->
+<!-- Yes! \pause Blocking! -->
+            
+            
+            
+
+## Why Block?
+\large
+
+>- Covariate **balance** 
+>- Estimate **closer to truth** 
+>- Increased **efficiency** 
+>- Triply-robust estimates: block, randomize, adjust 
+>- Block-level effects  
+$\rightsquigarrow$ different actors interested in different effects
+>- Guidelines for limited/uncertain resources
+
+## Why Block?
+
+@imakinstu08:
+
+Define _population average treatment effect_, PATE:
+
+$$\text{PATE} \equiv \frac{1}{N} \sum\limits_{i=1}^N TE_i$$
+
+\pause 
+
+and observed difference in sample means, $D$:
+
+$$D \equiv \frac{1}{n/2} \sum\limits_{i \in \{I_i = 1, T_i =1\}} Y_i - \frac{1}{n/2} \sum\limits_{i \in \{I_i = 1, T_i =0\}} Y_i$$
+\pause 
+
+then, the total _estimation error_ is
+
+$$\Delta \equiv \text{PATE} - D$$
+            
+## Why Block?
+
+The _estimation error_ can be decomposed:
+
+$$\Delta = \underbrace{\Delta_S}_{\text{sampling error}} + \underbrace{\Delta_T}_{\text{treatment imbalance}}$$
+\pause 
+
+Further, 
+
+\begin{eqnarray*}
+\Delta & = & \underbrace{\Delta_{S_X}}_{\text{sampling error from obs}} + \underbrace{\Delta_{S_U}}_{\text{sampling error from unobs}} + \\
+&& \underbrace{\Delta_{T_X}}_{\text{treatment imbalance from obs}} + \underbrace{\Delta_{T_U}}_{\text{treatment imbalance from unobs}}
+\end{eqnarray*}
+
+Blocking controls $\Delta_{T_X}$\pause, and, to the degree correlated, $\Delta_{T_U}$.           
+            
+## Usual Blocking
+\Large
+
+>- Exact on one or two discrete covariates  
+(best predictor)
+>- More covariates: no exact comparable units  
+(5 covars, 3 levels: $3^5 = 243$)
+>- More covariates often done informally 
+            
+
+## Multivariate, Continuous Blocking
+@moore12
+
+>- Like matching on PS, MD, start with dimension reduction
+>- Like matching, select an algorithm
+>- Like matching, select other attributes (caliper, etc.)
+
+            
+## Multivariate, Continuous Blocking
+\Large
+            \begin{itemize}
+            \item Collect the predictors $\mathbf{X}$ \pause 
+            \item Calculate how different units are from each other on $\mathbf{X}$'s  \pause 
+            \begin{itemize}
+            \item Mahalanobis distance between every pair of units:
+              $MD_{ij} = \sqrt{({\bf x}_i
+                                - {\bf x}_j)'\hat{\Sigma}^{-1}({\bf x}_i-{\bf x}_j)}$
+                \end{itemize} \pause 
+                \item Create blocks of similar units \pause 
+                \item Randomize within blocks
+                \end{itemize}
+
+## A Matrix of Distances
+
+(First 5 rows of `x100`, variables `b1` and `b2`)
+
+```{r, echo=FALSE}
+data(x100)
+n_obs <- 5
+df_dist <- x100 |> select(b1, b2) %>% slice(1:n_obs)
+#m <- apply(df_dist, 2, mean)
+vcov <- cov(df_dist)
+mat_dist <- matrix(NA, n_obs, n_obs)
+for(i in 1:n_obs){
+  mat_dist[i, ] <- sqrt(mahalanobis(df_dist, center = as.vector(as.matrix(df_dist[i, ])), cov = vcov))
+}
+colnames(mat_dist) <- rownames(mat_dist) <- x100$id[1:n_obs]
+mat_dist |> round(2)
+```
+
+
+
+## Classes of Blocking Algorithms
+
+\large
+
+>- Optimal: consider all blockings; pick best.  
+(High-order problem)
+>- Optimal-greedy: consider all distances, pick best. 
+>- Naive greedy: Get best block for this unit now.
+
+
+## Which Multivariate Blocking Algorithm? (optimal greedy)
+  
+<!-- Outperforms naive greedy -->
+<!-- \begin{itemize} -->
+<!-- \item Optimal: consider all blockings; pick best. -->
+<!-- \item[] (High-order problem)   -->
+<!-- \item Optimal-greedy: consider all distances, pick best.   -->
+<!-- \item Naive greedy: Get best block for this unit now.  -->
+<!-- \item OPTGREEDY in {\color{red}red} -->
+<!-- \end{itemize} -->
+
+\vspace{-5mm}
+\begin{center}
+\includegraphics[angle=0, width=3.4in]{figs/03-optnaive.pdf}
+\end{center}
+                
+                
+## Deploying Limited Resources: opt-greedy algorithm
+
+<!-- Limited resources:  Willing to trade off worse matches at the bottom for better ones in the places we're going to survey. -->
+
+\begin{center}
+\includegraphics[angle=0, width=4.4in]{figs/03-spLimitedRes.jpg}
+\end{center}
+
+                
+## Why Block: Balance
+
+<!-- ``But this sounds like more work!  Can't I just do random allocation?'' -->
+
+\pause 
+            
+Simulation study: 100 units, $X_1 \sim N(0,1)$, $X_2 \sim \text{Unif}(0,1)$, 
+$X_3 \sim \chi^2_2$; 1000 such experiments.  Assg treatmnt in 3 ways.  $p$-value from `xBalance`.
+
+\pause 
+\vspace{-6mm}
+
+\begin{center}
+\includegraphics[angle=0, width=3in]{figs/03-simBalBoxes}
+\end{center}
+            
+                
+  
+## Why Block: Balance
+
+<!-- Same if do $t$ tests or Wilcoxon rank sum tests. -->
+
+\vspace{-5mm}
+\begin{center}
+\includegraphics[angle=0,width=3.4in]{figs/03-simEachVarKS}
+\end{center}
+
+<!-- \includegraphics[angle=0,width=1.6in]{/Users/rtm/Documents/Dropbox/research/block/figs/simEachVarTT}\\ -->
+<!-- \includegraphics[angle=0,width=1.6in]{/Users/rtm/Documents/Dropbox/research/block/figs/simEachVarWC} -->
+
+
+  
+## Why Block: Efficiency
+
+<!-- \begin{enumerate} -->
+<!-- \item $Y_{i0} = 1 +X_{i1} + 2X_{i2} + 3X_{i3} + \epsilon_i$ -->
+<!--   \item True TE is 1. -->
+<!-- \end{enumerate} -->
+<!-- Same IMPROVEMENT under HETEROGENEITY of Tr Effect. -->
+
+\vspace{-5mm}
+\begin{center}
+\includegraphics[angle=0,width=3.9in]{figs/03-simTEs}
+\end{center}
+    
+  
+## Why Block: Efficiency under TE Heterogeneity
+
+<!-- \begin{enumerate} -->
+<!-- \item 12 units -->
+<!-- \item Half $X \sim N(0,1)$, half $X \sim N(10,1)$ -->
+<!-- \item $Y_{i0} = X$ -->
+<!-- \item[] $Y_{i1} = 2X$ -->
+<!-- \item So, half $\bar{TE} = 1$, half $\bar{TE} = 10$ -->
+<!-- \end{enumerate} -->
+
+\begin{center}
+\includegraphics[angle=0,width=4.7in]{figs/03-teHetero}
+\end{center}
+   
+  
+# Applications: Seguro Popular, Perry Preschool, Ignatieff Campaign
+
+## Experiment: Randomized Health Infrastructure & Insurance
+@kingakima09
+  
+<!-- Thus, MOTIVATION for USING INFO as EFFIC. as possible.  \\ -->
+<!-- \vspace{4mm} -->
+
+<!-- Among COMPLIERS, Reductions in frac. of fam's spending $\geq 30\%$ of income on health (``catastrophic'') -->
+<!-- \begin{itemize} -->
+<!-- \item 55\% overall ($9.5-5.2 = 4.3\%$) -->
+<!-- \item 59\% among poor ($11.0 - 6.5 = 5.5\%$) -->
+<!-- \end{itemize} -->
+    
+
+- **Intervention**: resources for medical services, preventive care,
+    pharmaceuticals, access, and financial health protection
+- **Beneficiaries**: 50M Mexicans (half the pop) w/o access to health care
+
+<!-- %  \item {\bf Premiums}: \$0 for bottom 2 income deciles, low otherwise -->
+<!-- %GK  \item Mexican Health Policy: centralized $\rightsquigarrow$ -->
+<!-- %GK    decentralized $\rightsquigarrow$ \alert{stewardship} -->
+
+- **Cost** 2005 full $+1\%$ GDP new money annually
+
+<!-- %  \item Cost when fully implemented: additional 1\% of GDP $(5.6\% \to 6.6\%)$ -->
+
+- One of **largest** health reforms of any country in 2
+    decades
+- Most **visible** accomplishment of Fox administration
+- Major **issue** 2006 pres. campaign (vote choice effect: 7-11\%) 
+
+<!-- % to Calderon)  -->
+<!-- %esp. urban, dual enrollees more -->
+<!-- %likely to report PAN votes for Calderon (Diaz-Cayeros, -->
+<!-- %Esteves, Magaloni 2006.  -->
+<!-- % Counter finding (but not as rigorous):  no effect on vote conditional on Fox approval, ideology, -->
+<!-- % etc. (Poire: MNLogit) -->
+<!-- %\item {\it Seguro Popular}: \$800 million new health spending -->    <!-- %\item Major domestic leg. of Fox admin -->
+
+- **Randomized** 74/148 health clusters to first roll-out, infrastructure spending, encouragement to enroll
+- But -- do **better** than pure coin flip
+
+    
+
+## Designing the _Seguro Popular_ Experiment
+
+\large 
+
+How can we learn **most** from 148 cluster experiment?
+
+\begin{itemize}
+\item Ensure causes of HH expenditures evenly {\it balanced} betwn Tr and Co
+\item[] (otherwise, Tr might be poorer, or Co more insured)
+\item Make sure effect estimates as {\it precise} as possible
+\item[] (prefer estimate of ``9 to 11\%'' to ``$-10$ to 30\%'')
+\end{itemize}
+
+
+## Designing the _Seguro Popular_ Experiment  
+  
+\begin{itemize}[<+->]
+  \item Data on clusters:
+  
+  \begin{centering}
+  \begin{tabular}{ccccc}
+  cluster & population & educ years & doctors & nurses\\
+  MCSSA000364 &  3130 & 4.00 &    1 &     1 \\
+  MCSSA000504 &  6492 & 5.11 &    1 &     1 \\
+  MCSSA008221 &  5096 & 4.26 &    2 &     2
+  \end{tabular}
+  \end{centering}
+  \item Calculate how different clusters are from each other 
+  \item Mahalanobis distance between every pair of units:
+  $MD_{ij} = \sqrt{({\bf x}_i - {\bf x}_j)'\hat{\Sigma}^{-1}({\bf x}_i-{\bf x}_j)}$
+\end{itemize}
+
+
+## Blocked Pairs, Morelos
+
+<!-- \begin{itemize} -->
+  <!-- \item So, PAIRS should have same potential outcomes! -->
+  <!-- \end{itemize} -->
+  
+  <!--   Among COMPLIERS, Reductions in frac. of fam's spending $\geq 30\%$ of income on health (``catastrophic'') -->
+<!-- \begin{itemize} -->
+<!-- \item 55\% overall ($9.5-5.2 = 4.3\%$) -->
+<!-- \item 59\% among poor ($11.0 - 6.5 = 5.5\%$) -->
+<!-- \end{itemize} -->
+
+
+\begin{center}
+\includegraphics[width=.9\textwidth]{figs/03-mor.pdf}
+\end{center}
+
+
+## Balance in Baseline Outcomes, _Seguro Popular_
+@kingakrav07
+
+\begin{center}
+\includegraphics[angle=0, width=2.5in]{figs/03-KGRfig5b.jpg}
+\pause 
+
+\large
+(Plus, SE's would have been $2\times$ to $6\times$ larger!)
+    
+\end{center}
+    
+    
+<!--   \begin{itemize} -->
+<!--   \item Effect of assignment on outcomes at baseline for poor families.  Without (open circles) and with (closed disks) covariate adjustment; diamonds represent the average for each category. -->
+<!-- \item Concern with Health Self-Assessment  -->
+<!--   \begin{itemize} -->
+<!--   \item But it's state-of-the-art anchoring vignettes! -->
+<!--   \end{itemize} -->
+<!--   \end{itemize} -->
+    
+    
+## Blocking in Applications: Balance and Efficiency
+@moore12: Perry Preschool Experiment
+
+<!-- ``Ok, but what about real field experiments?'' -->
+<!--   \begin{itemize} -->
+<!--   \item Real data -->
+<!--   \item {\color{blue}Blue} line is obtained balance on their covars -->
+<!--     \item {\color{red}Red} line is $y=x$.  If blocking $=$ CompRand -->
+<!--       and RandAlloc, then all dots on red line. -->
+<!-- \item but, blocking balance better! -->
+<!--   \end{itemize} -->
+    
+<!--   \begin{itemize} -->
+<!--   \item Assume sharp null -->
+<!--   \item Est. TE under 3 assignments: thick $=$ block $=$ narrowest -->
+<!--   \end{itemize} -->
+    
+\large
+Left: QQ plot of balance (100 blocked vs. unblocked)  
+Right: Est TE under sharp null (100 blocked vs. unblocked)
+
+\begin{center}
+    \includegraphics[width=2.1in]{figs/03-repPerryBalQQarrests}
+    \includegraphics[width=2.1in]{figs/03-repPerryTEarrestsReg}
+    \end{center}
+    
+(SES, sex, IQ)    
+<!-- %\caption{Perry Preschool application, balance (left) and estimated -->
+<!-- %  treatment effects under a sharp null assumption of no effect on -->
+<!-- %  total arrests (right).  Top row uses SES, sex, and IQ; bottom row -->
+<!-- %  uses larger covariate set.  Complete randomizations ($\circ$); random allocations ($\bullet$).  Blocked experiments better balanced than unblocked -->
+<!-- %  randomizations (above dashed $y=x$ line) and actual -->
+<!-- %  balance obtained in Perry study (dotted line); -->
+<!-- %  also more efficient ({\bf thick} density is narrowest).} -->
+    
+    
+## Balance in Applications: Balance and Efficiency
+    
+<!--   \begin{itemize} -->
+<!--   \item Same application, added covariates:  (siblings, whether the -->
+<!--     family was receiving AFDC, whether the mother was employed, the -->
+<!--     occupational skill level of the father, housing density, whether the father lived with the child, the mother's education level, and the raw IQ score.) -->
+<!--   \item Bad balance on mom employment (and welfare receipt, housing density, father's skill level) -->
+<!--   \end{itemize} -->
+
+<!-- Take away:  Don't be limited on important vars by fact that -->
+<!-- literature/older techniques use few vars! -->
+                                                
+<!-- \begin{itemize} -->
+<!-- \item HAPPY to talk: GENETIC algos, APPS to PARTY POLITICS, RADIO SPENDING -->
+<!-- \end{itemize} -->
+                                                
+\Large
+Considering more variables \ldots
+
+\begin{center}                        \includegraphics[width=2in]{figs/03-repPerryBalQQarrestsAll}
+\includegraphics[width=2in]{figs/03-repPerryTEarrestsAllReg}
+\end{center}
+
+($+$ siblings, AFDC, mom empl, educ, father, \ldots)
+
+<!-- \caption{Perry Preschool application, balance (left) and estimated -->
+<!-- treatment effects under a sharp null assumption of no effect on -->
+<!-- total arrests (right).  Top row uses SES, sex, and IQ; bottom row -->
+<!-- uses larger covariate set.  Complete randomizations ($\circ$); random allocations ($\bullet$).  Blocked experiments better balanced than unblocked -->
+<!-- randomizations (above dashed $y=x$ line) and actual -->
+<!-- balance obtained in Perry study (dotted line); -->
+<!-- also more efficient ({\bf thick} density is narrowest).} -->
+
+
+
+## Balance in Applications
+
+@loerub11: persuade party delegates to support Ignatieff  
+Left: QQ plot of balance (100 blocked vs. unblocked)  
+Right: Est TE under sharp null (100 blocked vs. unblocked)
+<!-- \begin{itemize} -->
+<!-- \item Experiment by Loewen and Rubenson on persuading party delegates to support Lib Party candidate. -->
+<!-- \item Outcome is ballot rank   -->
+<!-- \item Same pattern: blocking more balanced and efficient -->
+<!-- \item Blocking better than Perry: more units. -->
+<!-- \end{itemize} -->
+
+\begin{center}
+\includegraphics[width=2in]{figs/03-repLRBalQQ}
+\includegraphics[width=2in]{figs/03-repLRTEreg}
+\end{center}
+
+(province, pledged, special constituency)
+<!-- \caption{Ignatieff delegate application, balance (left) and estimated treatment effects (right).  Top row uses province, pledged candidate, and special constituency representation; bottom row adds delegate attention and interest.  Complete randomizations ($\circ$); random allocations ($\bullet$).  Blocked experiments better balanced than unblocked randomizations (above dashed $y=x$ line) and actual balance obtained in Ignatieff delegate study dotted line); also more efficient ({\bf thick} density is narrowest).} -->
+
+## Balance in Applications
+
+Considering more variables \ldots  
+<!-- (actually measure post-treatment) -->
+
+\begin{center}
+\includegraphics[angle=0, width=2.1in]{figs/03-repLRBalQQall}
+\includegraphics[angle=0, width=2.1in]{figs/03-repLRTEallReg}
+\end{center}
+
+($+$ attention, interest)
+
+<!-- \caption{Ignatieff delegate application, balance (left) and -->
+<!-- estimated treatment effects (right).  Top row uses province, pledged -->
+<!-- candidate, and special constituency representation; bottom row -->
+<!-- adds delegate attention and interest.  Complete randomizations ($\circ$); random allocations ($\bullet$).  Blocked experiments better balanced -->
+<!-- than unblocked randomizations (above dashed $y=x$ line) and -->
+<!-- actual balance obtained in Ignatieff delegate study dotted -->
+<!-- line); also more efficient ({\bf thick} density is narrowest).} -->
+
+
+
+## Multivariate Continuous Blocking with `blockTools`
+@moosch23
+
+\Large
+In R,
+
+```{r}
+library(blockTools)
+data(x100)
+head(x100)
+```
+
+
+## Multivariate Continuous Blocking with `blockTools`
+
+\large 
+
+Block:
+```{r warning = FALSE, eval=FALSE}
+block.out <- block(data = x100, id.vars = "id", 
+                   block.vars = c("b1", "b2"))
+```
+\pause 
+
+```{r warning = FALSE, echo=FALSE}
+block.out <- block(data = x100, id.vars = "id", 
+                   block.vars = c("b1", "b2"))
+block.out$blocks[[1]][1:5, ]
+```
+
+
+## Multivariate Continuous Blocking with `blockTools`
+
+\large
+
+Assign:
+
+```{r warning = FALSE, eval=FALSE}
+assg.out <- assignment(block.out, seed = 157)
+```
+\pause 
+
+```{r warning = FALSE, echo=FALSE}
+assg.out <- assignment(block.out, seed = 157)
+assg.out$assg[[1]][1:5, ]
+```
+
+
+## Multivariate Continuous Blocking with `blockTools`
+
+\large 
+
+Diagnose: 
+```{r eval=FALSE, warning = FALSE}
+diagnose(assg.out, data = x100, id.vars = "id", 
+         suspect.var = "b1", suspect.range = c(0,5)) 
+```
+\pause 
+
+Get block IDs
+```{r eval=FALSE, warning = FALSE}
+createBlockIDs(assg.out, data = x100, id.var = "id")
+```
+
+\pause 
+
+Get balance:
+```{r eval=FALSE, warning = FALSE}
+assg2xBalance(assg.out, x100, id.var = "id", 
+              bal.vars = c("b1", "b2"))
+```
+
+## Multivariate Continuous Blocking with `blockTools`
+
+Extract conditions:
+
+```{r eval=TRUE}
+extract_conditions(assg.out, x100, id.var = "id")
+```
+
+\pause 
+
+```{r}
+x100 |> mutate(condition = extract_conditions(assg.out, x100, id.var = "id"))
+```
+
+
+
+<!-- %\frame{ -->
+<!--   %\frametitle{Experimental Health Clusters Typical of Mexico} -->
+<!--   %\framesubtitle{} -->
+<!--   % -->
+<!--   %\note{   -->
+<!--     % -->
+<!--     %\begin{itemize} -->
+<!--     %\item Clusters TYPICAL -->
+<!--     %\end{itemize} -->
+<!--     % -->
+<!--     %  Among COMPLIERS, Reductions in frac. of fam's spending $\geq 30\%$ of income on health (``catastrophic'') -->
+<!--     %\begin{itemize} -->
+<!--     %\item 55\% overall ($9.5-5.2 = 4.3\%$) -->
+<!--     %\item 59\% among poor ($11.0 - 6.5 = 5.5\%$) -->
+<!--     %\end{itemize} -->
+<!--     %} -->
+<!--   % -->
+<!--   %\begin{center} -->
+<!--   %\includegraphics[width=4in]{figs/balSPdens} -->
+<!--   %\end{center} -->
+<!--   %} -->
+
+
+
+    
+# Two Issues: Outliers and Interference
+
+## Covariate Weightings: Resistant Scaling
+
+\Large
+
+>- $MD_{ij} = \sqrt{({\bf x}_i - {\bf x}_j)' \Sigma^{-1} ({\bf x}_i - {\bf x}_j)}$
+>- How to estimate $\Sigma$?
+>    - resistant covariance
+>    - regular covariance
+>    - manual weighting
+>    - identity matrix (Euclidean dist)
+>- Resistant covariance estimators
+>    - MCD (Minimum Covariance Determinant)  
+1 constraint: include $h$ points in interior
+>    - MVE (Minimum Volume Ellipsoid)  
+2 constraints: include $h$ points, $p+1$ points on boundary
+
+    
+## Covariate Weightings: Resistant Scaling
+
+\vspace{-5mm}
+\begin{center}
+\includegraphics[angle=0, width=3.8in]{figs/03-resMDpoints}
+\end{center}
+
+
+## Covariate Weightings: Resistant Scaling
+    
+    
+<!--  $A=(1,1)$, -->
+<!-- $B=(2,1)$, $C=(1, 4.1)$, and $D=(2,4)$. \\  In MD, the closest unit to -->
+<!-- $A$ is $B$, by a small margin.  \\ -->
+<!-- Adding outlier at $(1, 100)$ means the $y$-variation in the first four -->
+<!-- points becomes meaningless, and $C$ is considered much closer to $A$.\\ -->
+<!-- The outlier can leverage covariation to make $D$ closest to -->
+<!-- $A$. \\ As this extreme outlier is unlikely to yield a useful comparison -->
+<!-- to any of the other units, we consider this influence undesirable.   -->
+
+Given outliers, use resistant estimates of $\Sigma$ and blocks will stay _same_:
+
+\pause 
+
+\begin{center}
+\begin{tabular}{ccccc}
+& & \multicolumn{3}{c}{Distance from $A$} \\
+    Scale Matx & Points & $B$ & $C$ & $D$ \\ \hline
+    Cov & $A$-$D$ &  {\bf 1.73} & 1.76 & 2.45\\
+    Cov & $A$-$D+ (1, 100)$ & 2.00 & {\bf 0.08} & 2.03 \\
+    Cov & $A$-$ D + (20, 100)$ &  1.72 & 1.01 & {\bf 0.74} \\
+    &&&&\\
+    MCD & $A$-$D$ &  {\bf 1.73} & 1.76 & 2.45\\
+    MCD & $A$-$D + (1, 100)$ &  {\bf 1.73} & 1.76 & 2.45\\
+    MCD & $A$-$D+ (20, 100)$ &  {\bf 1.73} & 1.76 & 2.45\\
+    &&&&\\
+    MVE & $A$-$D$ &  {\bf 1.73} & 1.76 & 2.45\\
+    MVE& $A$-$D + (1, 100)$ &  {\bf 1.73} & 1.76 & 2.45\\
+    MVE & $A$-$D+ (20, 100)$ &  {\bf 1.73} & 1.76 & 2.45\\ \hline
+\end{tabular}
+\end{center}
+
+
+\begin{center}
+({\bf Bold} $=$ closest to $A$)
+\end{center}
+
+<!-- %\caption{Example of consistent blocks in the presence of outliers under resistant estimates of -->
+<!-- %the covariate scaling matrix.  {\bf Bold} values denote unit closest to $A$.} -->
+    
+    
+## Covariate Weightings: Resistant Scaling
+    
+<!-- Here's a direct application to blocking: -->
+<!--   \begin{itemize} -->
+<!--     \item 20 units $\sim MVN$, some pos. covariance betwn $X1$, $X2$. -->
+<!--       \item 2 outliers.  Block on MD.   -->
+<!-- \item Resistant scaling approximates source; 21-22 together, all -->
+<!--   others same. -->
+<!-- \item Non-resistant gets stretched by 21, 22, loses source differences -->
+<!--   between others. -->
+<!--   \item ``Resistant estimates of scaling matrix create more stable blocks than nonresis- -->
+<!-- tant estimates. Panels' ellipses represent original, resistant, and nonresistant estimates of -->
+<!-- variance-covariance scaling matrix. Outlying units in squares distort scaling matrix under -->
+<!-- nonresistant scaling, thus altering many blocks. Resistant scaling matrix reproduces blocks -->
+<!-- of source distribution.'' -->
+<!--   \end{itemize} -->
+    
+    
+\begin{center}
+\includegraphics[angle=0, width=4.5in]{figs/03-robellPA}
+\end{center}
+    
+    
+## Covariate Weightings
+    
+<!-- \begin{enumerate} -->
+<!-- \item Ignore outliers, regular MD -->
+<!--   \item Use outliers, resistant MD -->
+<!-- \item Use outliers, regular MD (messed up pairs) -->
+<!-- \end{enumerate} -->
+    
+\large
+
+\begin{center}
+
+Baseline: Exclude outliers, regular MD
+
+\begin{tabular}{cccc}    \hline
+& Unit 1 & Unit 2 & Distance \\     \hline
+    1 & 15 & 4 & 0.18 \\ 
+    2 & 9 & 7 & 0.37 \\ 
+    3 & 13 & 5 & 0.37 \\ 
+    4 & 18 & 10 & 0.43 \\ 
+    5 & 17 & 3 & 0.44 \\ 
+    6 & 14 & 11 & 0.50 \\ 
+    7 & 20 & 1 & 0.65 \\ 
+    8 & 16 & 2 & 0.95 \\ 
+    9 & 12 & 6 & 1.32 \\ 
+    10 & 19 & 8 & 2.12 \\ 
+    \hline
+\end{tabular}
+\end{center}
+
+<!-- \caption{Blocks from Data excluding Outliers, using Non-Outlier-Resistant Covariate Weighting Matrix.} -->
+
+    
+## Covariate Weightings
+
+\begin{center}
+
+Include outliers, resistant MD:  
+Same blocks!  \smiley 
+    
+\begin{tabular}{cccc}
+    \hline
+    & Unit 1 & Unit 2 & Distance \\ 
+    \hline
+    1 & 15 & 4 & 0.18 \\ 
+    2 & 13 & 5 & 0.37 \\ 
+    3 & 9 & 7 & 0.42 \\ 
+    4 & 18 & 10 & 0.46 \\ 
+    5 & 17 & 3 & 0.50 \\ 
+    6 & 14 & 11 & 0.59 \\ 
+    7 & 20 & 1 & 0.76 \\ 
+    8 & 16 & 2 & 1.03 \\ 
+    9 & 12 & 6 & 1.56 \\ 
+    10 & 19 & 8 & 2.18 \\ 
+    11 & 22 & 21 & 13.43 \\ 
+    \hline
+\end{tabular}
+\end{center}
+
+<!-- \caption{Blocks from Data including Outliers, using Outlier-Resistant -->
+<!--       Covariate Weighting Matrix.  All pairings identical to no outliers, -->
+<!--       non-resistant weighting above.} -->
+    
+    
+## Covariate Weightings
+    
+\begin{center}
+
+Include outliers, non-resistant MD:  
+\alert{Blocks shuffled by outliers  \frownie}
+    
+\begin{tabular}{cccc}
+    \hline
+    & Unit 1 & Unit 2 & Distance \\ 
+    \hline
+    1 & 17 & 15 & 0.12 \\ 
+    2 & 9 & 7 & 0.24 \\ 
+    3 & 19 & 13 & 0.25 \\ 
+    4 & 14 & 11 & 0.28 \\ 
+    5 & 10 & 1 & 0.33 \\ 
+    6 & 12 & 3 & 0.45 \\ 
+    7 & 4 & 2 & 0.58 \\ 
+    8 & 20 & 18 & 0.69 \\ 
+    9 & 8 & 5 & 1.45 \\ 
+    10 & 22 & 6 & 2.24 \\ 
+    11 & 21 & 16 & 3.64 \\ 
+    \hline
+\end{tabular}
+\end{center}
+
+
+<!-- %\only<1>{/Users/rtm/Documents/Dropbox/research/block/figs/blNoOutNoRes}} -->
+<!-- %\only<2>{\input{/Users/rtm/Documents/Dropbox/research/block/figs/blOutRes}} -->
+<!-- %\only<3>{\input{/Users/rtm/Documents/Dropbox/research/block/figs/blOutNoRes}} -->
+    
+    
+    
+<!-- ## Goldilocks?  -->
+    
+    
+## Interference
+    
+\Large
+
+- We worry that effects may spillover: _interference_
+- But nearby units are similar!
+- Restrict blocks to units in a range 
+
+<!-- \item (2D version, to come!) -->
+
+    
+    
+    
+## Multivariate Continuous Blocking with `blockTools`
+
+Other arguments to `block()`
+
+\begin{itemize}
+\item {\tt vcov.data}
+\item {\tt n.tr}
+\item {\tt algorithm}
+\item {\tt distance}: {\tt mahalanobis}, {\tt mcd}, {\tt mve}
+\item {\tt weight}
+\item {\tt level.two}: block states by most similar cities
+\item {\tt valid.var}, {\tt valid.range}: Goldilocks
+\item {\tt seed}: (for {\tt mcd} and {\tt mve})
+\end{itemize}
+
+
+    
+<!-- %\frametitle{Adding Genetic Search to Blocking Improves Balance}  -->
+<!-- %\framesubtitle{{\tt x100}: 35\% and 16\% Improvement} -->
+
+<!-- %\vspace{-4mm} -->
+<!-- % \begin{center} -->
+<!-- % \includegraphics[angle=0, width=5in]{/Users/rtm/Documents/Dropbox/research/genblock/figs/rablgw2Assgs} -->
+<!-- % \end{center} -->
+
+
+<!-- %\frametitle{Adding Genetic Search to Blocking Improves Sensitivity} -->
+<!-- %\framesubtitle{250-300\% over random allocation; 75-85\% over blocking} -->
+<!-- %\vspace{-3mm} -->
+<!-- % \begin{center} -->
+<!-- % \includegraphics[angle=0, width=4.4in]{/Users/rtm/Documents/Dropbox/research/genblock/figs/sensx100zoom} -->
+<!-- % \end{center} -->
+
+
+
+# Blocking for Sequential Experiments
+
+## What about Sequential Experiments?
+@moomoo13
+
+<!-- \begin{itemize} -->
+<!-- \item END: happy talk abt PARTICULARS, and IMPROVEMENTS of mine over prior -->
+<!-- \item BUT, want QUESTIONS, so show ONE INPUT technique -->
+<!-- \end{itemize} -->
+    
+\begin{center}
+\only<1>{\invisible{\small tall, male,\\senior, pol sci\\ \vspace{-3mm} 
+    $\put(5, -1){\vector(1, -4){4}}$}
+    \includegraphics[angle=0, width=4.8in]{figs/03-queue.jpg}} \pause
+\only<2>{\small tall, male,\\senior, biology\\ \vspace{-3mm} 
+$\put(5, -1){\vector(1, -4){4}}$ \includegraphics[angle=0, width=4.8in]{figs/03-queue2.jpg}} \pause
+\only<3>{%\invisible{\small tall, male,\\senior, biology\\ \vspace{-3mm} 
+    % $\put(5, -1){\vector(1, -4){4}}$
+    %}
+\hspace{-45mm} Have info!\\
+    $\put(-55,1){\vector(3,-4){14}}$
+    $\put(-60,1){\vector(0,-4){14}}$
+    $\put(-65,1){\vector(-3,-4){14}}$
+\includegraphics[angle=0, width=4.8in]{figs/03-queue3.jpg}}
+    \end{center}
+}
+    
+
+## Common Discrete Covariate-Adaptive Allocations
+
+Biased coins
+
+\pause 
+
+Define unique covariate profile $\bf p$
+
+\pause 
+
+use $$Pr(t=T) = \left\{ \begin{array}{ll} \frac{2}{3} & \textrm{if $n_{\mathbf{p}T} < n_{\mathbf{p}C}$} \\ & \vspace{-3mm} \\ \frac{1}{3} & \textrm{if $n_{\mathbf{p}T} > n_{\mathbf{p}C}$} \end{array} \right.$$
+
+
+## Common Discrete Covariate-Adaptive Allocations
+
+Minimization
+
+\pause 
+
+Given $\bf p$, score each variable $s_j$, $\left(\frac{n_{\mathbf{p}C}-n_{\mathbf{p}T}}{n_{\mathbf{p}C}+n_{\mathbf{p}T}+1}\right)$  
+combine (sum), rank conditions, assign $\pi$'s
+
+\pause 
+
+\begin{center}
+\begin{tabular}{l|ccccc}
+& \multicolumn{2}{c}{Sex} & \qquad & \multicolumn{2}{c}{Age} \\
+& M & F &  \qquad &  Young & Old   \\ \hline
+Control& 1 & 3 &  \qquad & 3 & 3  \\
+Treatment &2 & 4 &  \qquad &  3 & 1\\
+\multicolumn{2}{c}{}&&&&\\ 
+$s_j$  (Old M) & $-\frac{1}{4}$ & &  & & $\frac{2}{5}$
+\end{tabular}
+\end{center}
+
+\pause 
+
+\vspace{3mm} 
+\hspace{30mm} \color{red}{(bias toward Treatment)}
+
+
+
+##  Common Discrete Covariate-Adaptive Allocations
+
+\Large
+\begin{enumerate}
+    \item Biased coins 
+    \item[] $\rightsquigarrow$ require unique, replicated covariate profiles \pause 
+    \item Minimization
+    \item[] $\rightsquigarrow$ ignores joint distribution
+\end{enumerate}
+    
+\begin{table}[t!]
+\begin{center}
+\small
+Perfect balance?\hspace{8mm} 
+\begin{tabular}{l|ccccc}
+& \multicolumn{2}{c}{Sex} & \qquad & \multicolumn{2}{c}{Age} \\
+& M & F &  \qquad &  Young & Old   \\ \hline
+Control& 3 & 3 &  \qquad &  3 & 3  \\
+Treatment & 3 & 3 &  \qquad &  3 & 3
+\end{tabular}
+
+\vspace{5mm} \pause
+Perfect imbalance? \hspace{3mm}
+\begin{tabular}{l|cccc}
+&&&&\\
+& Young M & Old M & Young F & Old F \\ \hline
+Control& 3 & 0 & 0 & 3 \\
+Treatment & 0 & 3 & 3 & 0 
+\end{tabular}
+\end{center}
+\end{table}
+
+<!-- \caption{Consistent marginal and joint distributions of two binary covariates.  The left panel reflects the minimization approach, and suggests good balance between treatment and control conditions.  However, the right panel makes clear that experimental conclusions will rest on results from isolated parts of the covariate support.} -->
+
+
+## My Approach
+  
+<!-- \begin{itemize} -->
+<!-- \item PREVIOUS discrete strategies -->
+<!-- \begin{itemize} -->
+<!-- \item Require unique PROFILE, or -->
+<!-- \item CAN'T acct for JOINT distn btwn COVARS -->
+<!-- \end{itemize} -->
+<!-- \end{itemize} -->
+    
+>- Allow discrete covariates, restriction to exact profile $\bf p$
+>- Move beyond counts in conditions
+>- Incorporate ordered, continuous covariates
+>    - Define dissimilarity between current unit and conditions  \pause  
+(Average pairwise Mahalanobis distance $\overline{MD}_{qt} = \frac{1}{R} \sum\limits_{r=1}^{R} MD_{qr}$) \pause 
+>    - Assign higher prob to more dissimilar conditions \pause  
+($k$-times, proportional to MD) \pause 
+>- Test on variety of data
+>    - Uncorrelated MVN
+>    - **Correlated MVN**
+>    - Correlated MVN with outliers
+>    - Bimodal (extreme correlated MVN) 
+>    - **Realistic data** 
+>- Implement in actual sequential trial
+
+  
+  
+## Seq. Blocking More Balanced than CR
+Correlated MVN
+  
+<!-- \begin{itemize} -->
+<!--   \item Left: 1 SB exp, 100 Complete Rands -->
+<!--   \item Right: 100 cov. sets SB'ed, 1 CR per 1 SB -->
+<!-- \end{itemize} -->
+
+\vspace{-5mm}
+\begin{center}
+\includegraphics[angle=0, width=4.5in]{figs/03-imbpreDistDoubleMeanr8d2}
+\end{center}
+
+<!-- \caption{SB experiments more balanced than CR experiments, aggregating two ways, within SB experiments (left panel) or within replication sets (right).  At left, segments give .05 and .95 quantiles of one SB's $d^2$ $p$-value minus 100 CR's $d^2$ $p$-values using same covariates.  At right, segments give quantiles 100 SB's $d^2$ $p$-values minus 100 CR's $d^2$ $p$-values using same covariates within pairs.  Points represent median differences.} -->
+
+<!-- % %   Method = {\tt double}, {\tt mean}, 2 MVN covariates with $r = .8$.} -->
+
+
+
+## Selecting a Method for Experiments
+
+Simulate 100 datasets, each has   
+(48 units, realistic means, SDs, bivariate corrs for 10 covariates) 
+
+\begin{center}
+\includegraphics[width=2.1in]{figs/03-balanceReald2pvalues} 
+\includegraphics[width=2.1in]{figs/03-balanceReald2pvaluesOutT}
+\end{center}
+
+<!-- \caption{Selecting a method for the PTSD trial.  Omnibus $d^2$ $p$-values from 100 sequentially randomized experiments using seven blocking methods, each represented by one boxplot.  With no (left panel) or some severe outliers (right panel), the $k=5$ method produces among the narrowest spreads and the highest minimum $p$-values.}  -->
+
+
+## Sequential PTSD Experiment Background
+
+- Background: PTSD impairs retrieval of specific autobiographical memories  
+- Question: Does practice lead to short-term changes in PTSD
+  symptoms? \pause
+- Recruitment
+    - Inclusion: veterans with PTSD diagnosis, 18-64 \pause
+    - Exclusion: psychotic disorder, bipolar disorder, substance abuse in last month, substance dependence in last year, recent psychiatric hospitalization, current suicidal intent \pause
+- 52 assigned total; 46 assigned Nov 09 - Jan 11; 39 follow-up. \pause
+- Two Conditions (daily practice)
+    - `memory`: retrieve specific memories of life events in response to cue words
+    - `anagrams`: rearrange letters of cue words to create new words (control)
+
+
+## Inputting Data in Real Time: Generalized Query
+Unit 1
+
+\scriptsize
+```
+> seqblock1(query=T)
+How many identification variables are there?
+> 1
+Enter the name of ID variable 1 without quotation marks.
+> id
+Enter the value of 'id'.
+> 10624
+How many exact blocking variables are there?
+> 0 
+How many blocking variables are there?
+> 2
+Enter the name of blocking variable 1.
+> x1
+Enter the value of `x1'.
+> 100
+Should `x1' be restricted to certain values? [n/y]
+> no
+Enter the name of blocking variable 2.
+> x2
+Enter the value of `x2'.
+> 80
+How many experimental/treatment conditions are there? 
+> 2
+```    
+  
+<!-- \frame{ -->
+<!--   \frametitle{Inputting Data} -->
+<!--   \framesubtitle{Unit 2 and after} -->
+
+<!--   \small -->
+<!--   {\tt -->
+<!--   \noindent > seqblock2k(query=T)\\ -->
+<!--   Enter the name of the input file without quotation marks. \\ {\color{red} sbout1.RData}\\ -->
+<!--   Enter the value of 'id'.  \\ -->
+<!--   {\color{red} 8333}\\ -->
+<!--   Enter the value of 'x1'.  \\ -->
+<!--   {\color{red} 90}\\ -->
+<!--   Enter the value of 'x2'.  \\ -->
+<!--   {\color{red} 98}\\ -->
+<!--   Unit 1:2 data stored as file sbout2k.RData.\\ -->
+<!--   The current working directory is /Users/you/Documents/yourdir\\ -->
+<!--   Unit 2 assigned to Treatment 2.\\ -->
+<!--   The new data as entered:\\ -->
+<!--   \hspace{4.5mm}        id x1 x2          Tr\\ -->
+<!--   2 8333 90 98 Treatment 2\\ -->
+<!--   } -->
+<!--   } -->
+
+## Balance: Moore & Moore 2013
+  
+\vspace{-2mm}
+\begin{center}
+\includegraphics[height=3.1in]{figs/03-balDynamic-ptsd.pdf}
+\end{center}
+
+  
+## Balance: Moore & Moore 2013
+  
+\vspace{-2mm}
+\begin{center}
+\includegraphics[height=3in]{figs/03-balMooMoo13.png}
+\end{center}
+
+## RI Confidence Intervals from `blockTools`
+
+\large 
+
+Get RI confidence interval from sequentially blocked data:
+
+```{r}
+set.seed(407357912)
+df <- tibble(id = 1:50,
+             prov = sample(1:2, 50, replace = TRUE),
+             age = sample(seq(18, 55, 1), 50, replace = TRUE),
+             treat = sample(0:1, 50, replace = TRUE),
+             yobs = treat + sample(15:20, 50, replace = TRUE))
+```
+
+\pause 
+
+Check summary statistics:
+
+```{r}
+df |> group_by(treat) |> summarise(m_yobs = mean(yobs))
+```
+
+
+## RI Confidence Intervals from `blockTools`
+
+Get RI confidence interval from sequentially blocked data:
+
+```{r eval=FALSE}
+invertRIconfInt(df, 
+                outcome.var = "yobs", tr.var = "treat",
+                tau.abs.min = -2, tau.abs.max = 3, 
+                tau.length = 20, n.sb.p = 200,
+                id.vars = "id", id.vals = "id", 
+                exact.vars = c("prov", "age"), exact.vals = c("prov", "age"))
+```
+
+\pause 
+
+```{r eval=FALSE}
+$ci95
+[1] -0.16  0.11  0.37  0.63  0.89  1.16  1.42
+
+$ci90
+[1] -0.16  0.11  0.37  0.63  0.89  1.16
+
+$ci80
+[1] 0.11  0.37  0.63  0.89  1.16
+```
+
+
+## RI Confidence Intervals: Moore & Moore 2013
+  
+Blocked estimates 9-15% more efficient  
+  
+\vspace{-2mm}
+\begin{center}
+\includegraphics[height=3in]{figs/03-ri-confints-ptsd.pdf}
+\end{center}
+  
+  
+<!-- ## Comparison Groups are a Matter of Life and Death -->
+<!-- (Tufte, 1974) -->
+
+<!-- \note{ -->
+<!-- \begin{itemize} -->
+<!-- \item I'VE developed new STAT techniques and SOFTWARE to block NONSEQuential and SEQuential exp's -->
+<!-- \item Deployed in a variety of environments  -->
+<!-- \begin{itemize} -->
+<!-- \item OTHERS: textbooks, FACT-CHECK of elites -->
+<!-- \end{itemize} -->
+<!-- \item HAPPY to talk abt CAUSAL INF \ldots -->
+<!-- \begin{itemize} -->
+<!-- \item ADDTIONLY, OBS data, combining models for OUTCOMES w/ ASSG -->
+<!-- \item Synthetic Controls Health policy -->
+<!-- \end{itemize} -->
+<!-- \item POINT of Techs is BETTER COMPARISON GROUP -->
+<!-- \end{itemize} -->
+
+<!-- \pause  -->
+<!-- \begin{center} -->
+<!-- \includegraphics[angle=0.5,width=4.8in]{/Users/rtm/Documents/Dropbox/admin/jobCALLS/sluAm/figs/tufteWhichHalf.png} -->
+<!-- \end{center} -->
+
+## Analysis for Blocked Designs
+
+\large
+
+If assignment probability for $i$ varies by block $j$, let $p_{ij} = m_{ij} / N_j$.  Weight each obs with 
+
+$$w_{ij} = \frac{d_i}{p_{ij}} + \frac{1-d_i}{1-p_{ij}}$$
+
+## Testing for Blocked Designs
+
+\large 
+
+\begin{centering}
+`As ye randomise so shall ye analyse'
+\end{centering}
+
+\pause 
+If blocks used to randomize, incorporate into RI.
+
+\pause 
+
+1. Use actual blocks created, when possible
+2. Reassign hypothetical treatment 1000 times
+3. Obtain distribution of ATEs under (e.g.) sharp null
+4. Compare observed ATE to randomisation distribution
+
+
+***
+
+\huge
+
+\begin{center}
+Next:\\
+Clustered Designs\\
+Regression and Experiments
+\end{center}
+
+## References {.allowframebreaks}
+
+\small
