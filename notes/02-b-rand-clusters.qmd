@@ -1,0 +1,354 @@
+---
+title: | 
+    | Randomized Experiments with Clusters
+author: "Ryan T. Moore"
+date: 2024-08-21
+date-format: iso
+execute: 
+  echo: true
+format: 
+  beamer:
+    fonttheme: serif
+    include-in-header:
+      - text: | 
+          \usepackage{wasysym} 
+      - file: zzz_beamer_header.tex
+    section-titles: true
+    toc: true
+institute:
+  - American University
+bibliography: "../admin/main.bib"
+---
+
+```{r}
+#| label: setup
+#| echo: false
+#| message: false
+#| results: false
+#| warning: false
+
+library(here)
+library(tidyverse)
+```
+
+# Clusters in Experiments
+
+## Clusters in Experiments
+
+\large
+
+>- So far, _individual units_ assigned to treatment
+>- But, sometimes, _groups_ of units assigned to treatment. 
+>- Consider assigning \ldots
+>    - Classrooms (not students) to new curriculum
+>    - Schools (not teachers or students) to new curriculum
+>    - Media markets (not viewers) to ad campaign
+>    - Clinic catchment areas (not patients) to health infrastructure spending
+>- These groups of individuals are _clusters_
+>- (Let's start with easy case: all clusters same size \ldots)  
+[@gergre12]
+
+# Variance
+
+## Variance
+
+\large 
+
+- CLT SE for diff in means for clustered design:
+
+\pause 
+
+\scriptsize
+
+$$SE(\widehat{ATE}) = \sqrt{\frac{1}{k-1} \left[ \frac{m \mathrm{Var}(\overline{Y_j}(0))}{N-m} + \frac{(N-m)\mathrm{Var}(\overline{Y_j}(1))}{m} +
+2\mathrm{Cov}(\overline{Y_j}(0), \overline{Y_j}(1)) \right]}$$
+
+\pause 
+
+\normalsize 
+
+What might make this SE large?
+
+>- Dividing by $k \equiv$ number of _clusters_
+>- So, small number of clusters $\rightsquigarrow$ larger SE
+>- Small clusters (more variability in means)
+>- If clusters differ in potential outcomes $\rightsquigarrow$ larger SE
+>- I.e., if clusters meaningful $\rightsquigarrow$ larger SE
+
+## Variance
+
+\large 
+
+- CLT SE for diff in means for clustered design:
+
+\scriptsize
+
+$$SE(\widehat{ATE}) = \sqrt{\frac{1}{k-1} \left[ \frac{m \mathrm{Var}(\overline{Y_j}(0))}{N-m} + \frac{(N-m)\mathrm{Var}(\overline{Y_j}(1))}{m} +
+2\mathrm{Cov}(\overline{Y_j}(0), \overline{Y_j}(1)) \right]}$$
+
+\normalsize
+
+What might make this SE small?
+
+>- Many clusters
+>- If clusters look like each other, $\rightsquigarrow$ smaller SE
+>- $\mathrm{Var}(\overline{Y_j}(1))$: variance in cluster averages of $Y_1$
+>- $\mathrm{Var}(\overline{Y_j}(0))$: variance in cluster averages of $Y_0$
+>- If $\mathrm{Var}(\overline{Y_j}(1)), \mathrm{Var}(\overline{Y_j}(0))$ are small, SE is small
+
+# Bias
+
+## Bias
+
+\large
+
+>- Consider case where clusters vary in size, and size correlates with $Y_1$, $Y_0$
+>    - Classrooms differ in number of students, and larger classes have lower test scores
+>    - Media markets vary in number of viewers, and voters in cities less likely to turn out
+>    - Health clusters vary in patient population, and larger clusters are healthier
+>- In this case, individual difference in means estimator is _biased_ for true ATE
+>    - (Different assignments of clusters will produce different counts of treated units!)
+
+
+## Bias
+
+\large
+
+Alternative estimator: Difference in totals (not means)
+
+$$\widehat{ATE} = \frac{k_T + k_C}{N} \left(\frac{\sum Y_i(1) | T_i = 1}{k_T} - \frac{\sum Y_i(0) | T_i = 0}{k_C} \right)$$
+
+\pause 
+
+>- But, doesn't include cluster sizes, so may be high variance
+>- I.e., more students per classroom doesn't help precision here (unlike above)
+
+# An Example
+
+## An Example
+
+\large
+
+>- 1000 voters, split across 10 cities
+>- Measure ideology, which varies by city and voter
+>- Do 2 hypothetical assignments
+>    - Individual-level assignment to news
+>    - City-level cluster assignment to news
+>- Use RI to find SE in each case
+
+## An Example
+
+```{r}
+library(fabricatr)
+library(randomizr)
+library(tidyverse)
+
+# Make data and visualise
+
+set.seed(95852894)
+
+voters <- fabricate(
+  N = 1000,
+  city_id = rep(1:10, 100),
+  ideology = draw_normal_icc(mean = 0, N = N, 
+                             clusters = city_id, ICC = 0.7),
+  city_id_fac = as.factor(city_id),
+  city_id_fac = fct_reorder(city_id_fac, ideology)
+  )
+```
+
+## An Example
+
+```{r}
+table(voters$city_id)
+```
+
+\pause 
+
+\scriptsize
+```{r}
+voters |> group_by(city_id) |>
+  summarise(mean_ideo = mean(ideology)) |>
+  arrange(mean_ideo)
+```
+
+
+## An Example
+
+```{r}
+#| echo: false
+voters |> ggplot(aes(city_id_fac, ideology)) +
+  geom_violin(draw_quantiles = 1/2) +
+  labs(x = "City", y = "Ideology")
+```
+
+## An Example
+
+Assignments
+
+```{r}
+voters <- voters |> 
+  mutate(
+    tr_ind = sample(rep(0:1, nrow(voters) / 2)),
+    tr_cl = cluster_ra(clusters = voters$city_id, m = 5))
+```
+
+\pause 
+
+```{r}
+voters |> count(tr_ind)
+voters |> count(tr_cl)
+```
+
+## An Example
+
+\large
+Conditions by city, individual-level assignment:
+
+```{r}
+table(voters$city_id, voters$tr_ind)
+```
+
+## An Example
+
+\large
+Conditions by city, cluster-level assignment:
+
+```{r}
+table(voters$city_id, voters$tr_cl)
+```
+
+## An Example
+
+\large
+Draw responses under each assignment:
+
+```{r}
+voters <- voters |>
+  mutate(
+    response_ind = draw_likert(x = ideology + tr_ind, min = -7, max = 7, bins = 7), 
+    response_cl = draw_likert(x = ideology + tr_cl, min = -7, max = 7, bins = 7))
+```
+
+\pause 
+
+```{r}
+#| echo: false
+#| fig-height: 5
+
+voters |> ggplot(aes(ideology, jitter(response_cl))) +
+  geom_point(aes(colour = city_id_fac,
+                 shape = factor(tr_cl))) +
+  labs(x = "Latent Ideology Score",
+       y = "Likert Survey Response (jittered)")
+```
+
+## An Example
+
+\large
+
+Analyse precision with RI:
+
+>- Do 1000 individual-level hypothetical assignments
+>- Do 1000 cluster-level hypothetical assignments
+>- Use sharp null $H_0: \tau_i = 0$ to impute unobserved potential outcomes
+>- Calculate $\widehat{ATE}$ in each case
+>- Compare distribution of $\widehat{ATE}_{\text{Individual}}$ to  
+distribution of $\widehat{ATE}_{\text{Cluster}}$
+>- With partner, sketch the two randomization distributions!
+
+## An Example
+
+Analyse precision with RI:
+
+\footnotesize
+
+```{r}
+n_sims <- 1000
+df_ates <- tibble(ate_ind = NA,
+                  ate_cl = NA)
+
+for(idx in 1:n_sims){
+  
+  voters <- voters |> 
+    mutate(
+      hyp_tr_individ = sample(rep(0:1, nrow(voters) / 2)),
+      hyp_tr_cl = cluster_ra(clusters = voters$city_id, m = 5))
+  
+  ate_ind <- mean(voters$response_ind[voters$hyp_tr_ind == 1]) -
+    mean(voters$response_ind[voters$hyp_tr_ind == 0]) 
+  
+  ate_cl <- mean(voters$response_cl[voters$hyp_tr_cl == 1]) -
+    mean(voters$response_cl[voters$hyp_tr_cl == 0]) 
+  
+  df_ates[idx, "ate_ind"] <- ate_ind
+  df_ates[idx, "ate_cl"] <- ate_cl
+}
+```
+
+## An Example
+
+Analyse precision with RI:
+
+\pause 
+
+```{r}
+#| echo: false
+#| fig-height: 5
+
+df_long <- df_ates |> pivot_longer(everything()) |>
+  mutate(Assignment = if_else(name == "ate_ind", "Individual", "Cluster"))
+
+ggplot(df_long, aes(value)) + 
+  geom_density(aes(color = Assignment,
+                   linetype = Assignment),
+               linewidth = 2) +
+  labs(x = "Hypothetical Estimated ATE")
+```
+
+\pause 
+
+```{r}
+#| echo: false
+
+df_ates |> summarise(se_ind = sd(ate_ind),
+                     se_cl = sd(ate_cl))
+```
+
+
+
+
+<!-- Include a PDF/PNG/... -->
+<!-- ![](figs/myfig.pdf){fig-align="center" height=80%} -->
+
+<!-- Include PDFs in columns -->
+<!-- \includegraphics[width=2in]{figs/myfig1.pdf} -->
+<!-- \includegraphics[width=2in]{figs/myfig2.pdf} -->
+
+***
+
+\huge
+
+\begin{center}
+Next:\\
+Regression and Experiments
+\end{center}
+
+\vspace{5mm}
+
+\large
+
+\center
+`rtm@american.edu`  
+`www.ryantmoore.org`  
+
+\quad
+
+<!-- \vspace{5mm} -->
+<!-- _Journal of Public Policy_   -->
+<!-- \hspace{3.5cm} @mooganmin22 -->
+
+## References {.allowframebreaks}
+
+\footnotesize
+
