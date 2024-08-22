@@ -1,0 +1,1199 @@
+---
+title: | 
+       | Regression with Randomized Experiments
+header-includes:
+  - \usepackage{datetime}
+  - \usepackage{amsmath}
+  - \usepackage{amssymb}
+  - \usepackage{wasysym}
+subtitle: ""
+author: "Ryan T. Moore"
+date: "2024-08-21"
+output:
+  beamer_presentation:
+    slide_level: 2
+    toc: true
+    fonttheme: serif
+    includes:
+      in_header: zzz_beamer_header.tex
+  pdf_document:
+    fig_caption: true
+    number_sections: true
+    urlcolor: blue  
+  tufte::tufte_handout: 
+    citation_package: natbib
+    latex_engine: xelatex
+    number_sections: yes
+  tufte::tufte_html: default
+  tufte::tufte_book:
+    citation_package: natbib
+    # latex_engine: xelatex
+bibliography: "../admin/main.bib"
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+# library(tufte)
+# invalidate cache when the tufte version changes
+# knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tufte'))
+# options(htmltools.dir.version = FALSE)
+
+library(broom)
+library(dagitty)
+library(ggdag)
+library(grid)
+library(png)
+library(tidyverse)
+```
+
+# The Linear Regression Estimator
+
+## Estimating the ATE
+
+In a policy experiment in India, @chaduf04 randomly assign reserved village council headship for women to villages.
+
+\pause 
+
+```{r warning = FALSE, message=FALSE}
+library(readr)
+seats <- read_csv("http://j.mp/2YfZdgv")
+```
+
+\pause 
+
+```{r warning = FALSE}
+head(seats)
+```
+
+## Estimating the ATE
+
+\Large 
+
+Explore assignment:
+
+```{r warning = FALSE}
+table(seats$reserved)
+```
+
+
+## Estimating the ATE
+
+
+Estimate treatment effect with difference in means:
+
+```{r warning = FALSE}
+mean(seats$water[seats$reserved == 1]) - 
+  mean(seats$water[seats$reserved == 0])
+```
+
+\pause 
+
+\vspace{5mm}
+
+In areas with reservations, about `r round(mean(seats$water[seats$reserved == 1]) - mean(seats$water[seats$reserved == 0]), 1)` more drinking water projects were undertaken.  
+
+***
+
+With binary treatment as predictor, we can recover same result using least squares regression.  
+
+\pause 
+
+Model:
+
+$$\text{Water Projects}_i = \beta_0 + \beta_1 \left(\text{Women's Seats}_i \right) + \epsilon_i$$
+
+\pause 
+
+Estimate coefficients
+
+```{r warning = FALSE}
+lm_out <- lm(water ~ reserved, data = seats)
+lm_out
+```
+
+***
+
+\large
+
+Estimated model
+
+$$\widehat{\text{Water Projects}}_i = `r round(lm_out$coef[1], 2)` + `r round(lm_out$coef[2], 2)`  \left(\text{Women's Seats}_i \right)$$
+
+\pause 
+
+>- Intercept: predicted value when Women's Seats are **not** reserved (`reserved == 0`)
+>- Slope: estimated average treatment effect
+  (difference between `reserved == 0` and `reserved == 1`).  
+
+\pause 
+
+\vspace{5mm}
+
+_Causal_ interpretation of coefficient comes from the science of the policy experiment, **not** from regression.
+
+
+## Social Pressure Mail Experiment
+
+@gergrelar08: Social pressure mailer experiment; households randomly receive one of four messages
+
+\pause 
+
+```{r echo=FALSE}
+img <- readPNG("figs/04-gg-civduty.png")
+grid.raster(img)
+```
+
+## Social Pressure Mail Experiment
+
+@gergrelar08: Social pressure mailer experiment; households randomly receive one of four messages
+
+```{r echo=FALSE}
+img <- readPNG("figs/04-gg-hawthorne.png")
+grid.raster(img)
+```
+
+## Social Pressure Mail Experiment
+
+@gergrelar08: Social pressure mailer experiment; households randomly receive one of four messages
+
+```{r echo=FALSE}
+img <- readPNG("figs/04-gg-neighbors.png")
+grid.raster(img)
+```
+
+
+## Multiple Regression: Many Predictors
+
+\large
+
+>- @gergrelar08: Social pressure mailing experiment; households randomly receive one of four messages
+>- _Four_ predictors of turnout: assigned mailing with control, civic duty, Hawthorne, or social pressure message
+>- Use all four to predict turnout in 2006 primary
+
+\pause 
+
+Model:
+\begin{eqnarray*}
+\text{Turnout 2006}_i & = &  \beta_0 + \beta_1 \cdot \text{Control}_i + \\ && \beta_2 \cdot \text{Hawthorne}_i + \beta_3 \cdot \text{Neighbors}_i  + \epsilon_i
+\end{eqnarray*}
+
+***
+
+```{r warning = FALSE, message=FALSE}
+social <- read_csv("http://j.mp/2YenEuU")
+
+lm_out <- lm(primary2006 ~ messages, data = social)
+```
+
+\pause 
+\vspace{5mm}
+
+```{r warning = FALSE, echo = FALSE}
+round(summary(lm_out)$coefficients, 3)
+```
+
+***
+Estimated model
+
+\begin{eqnarray*}
+\widehat{\text{Turnout 2006}}_i & = & `r round(lm_out$coef[1], 2)` + `r round(lm_out$coef[2], 2)`  \left( \text{Control}_i \right) + `r round(lm_out$coef[3], 2)`  \left( \text{Hawthorne}_i \right) + \\
+&&`r round(lm_out$coef[4], 2)` \left( \text{Neighbors}_i \right)
+\end{eqnarray*}
+
+\pause 
+
+1. What is the predicted turnout probability under `Control`?
+1. What is the predicted turnout probability under `Hawthorne`?
+1. What is the predicted turnout probability under `Neighbors`?
+1. What is the predicted turnout probability under `Civic Duty`?
+
+***
+
+Alternatively, estimate 
+
+\begin{eqnarray*}
+\text{Turnout 06}_i & = & \beta_0 \cdot \text{CivicDuty}_i + \beta_1 \cdot \text{Contrl}_i + \beta_2 \cdot \text{Hawthorne}_i +\\
+&& \beta_3 \cdot \text{Neighbors}_i  + \epsilon_i
+\end{eqnarray*}
+
+```{r warning = FALSE}
+lm_out <- lm(primary2006 ~ -1 + messages, data = social)
+summary(lm_out)$coefficients
+```
+
+***
+
+Estimated model:
+
+\begin{eqnarray*}
+\widehat{\text{Turnout 2006}}_i & = & `r round(lm_out$coef[1], 2)` \left( \text{Civic Duty}_i \right)   + `r round(lm_out$coef[2], 2)`  \left( \text{Control}_i \right) + \\
+&& `r round(lm_out$coef[3], 2)`  \left( \text{Hawthorne}_i \right) + `r round(lm_out$coef[4], 2)` \left( \text{Neighbors}_i \right)
+\end{eqnarray*}
+
+\pause 
+
+1. What is the predicted turnout probability under `Control`?
+1. What is the predicted turnout probability under `Hawthorne`?
+1. What is the predicted turnout probability under `Neighbors`?
+1. What is the predicted turnout probability under `Civic Duty`?
+
+# Models with Covariates 
+
+## Why add covariates to model?
+
+\large 
+
+We consider adding covariates to our linear model to
+
+>- adjust for chance differences 
+>    - reduce estimation error
+>- improve precision of $\hat{\beta}_1$ 
+>- estimate effects for subgroups
+>- account for design features
+>- improve predictions of outcome (beyond causal inf)
+
+\pause 
+>- (not to reduce bias in estimator, if simple design)
+
+## Does adjusting for covariates risk bias?
+
+$$Y_i = \beta_0 + \beta_1 T_i + \epsilon_i$$
+
+>- The bivariate regression $\hat{\beta}_1$ is unbiased for the ATE 
+>- $E(\hat{\beta}_1) = \beta_1$ \pause (diff in means, with indep from randomization) 
+
+\pause 
+
+Does adding covariates introduce bias?  \pause 
+
+>- @freedman08: it can. 
+<!-- >- Speaker's concern  -->
+>- @grearo11: Actually, not in practice. \pause And, small relative to $SE(\widehat{TE})$. \pause 
+>- "Included variable bias" (see https://t.ly/ttYpD)
+
+## Models with Covariates
+
+\large
+
+>- May want to adjust for or improve predictions based on several covariates
+>- Covariates are _pre-treatment_!
+>- E.g., experiment not quite balanced on age, prior turnout; adjust diff-in-means.
+>- E.g., make better turnout predictions by including registrant's 
+age and prior turnout, in addition to whether received `Neighbors` 
+postcard
+>- Age and prior turnout are _causally prior_ to treatment
+>- Let's just compare `Neighbors` to `Control`.
+
+## Models with Covariates
+
+\large 
+
+```{r warning = FALSE}
+# Subset to two treatment conditions:
+social.neighbor <- subset(social, 
+                          (messages == "Control") |
+                            (messages == "Neighbors"))
+
+# Calculate age:
+social.neighbor <- social.neighbor |> 
+  mutate(age = 2006 - yearofbirth)
+```
+
+***
+
+\large
+```{r warning = FALSE}
+# Multiple regression:
+lm_out <- lm(primary2006 ~ age + primary2004 + 
+               messages, data = social.neighbor)
+
+summary(lm_out)$coefficients |> round(3)
+```
+
+***
+
+Now, make different prediction depending on registrant's 
+age and prior turnout, not just treatment status.
+
+\pause 
+
+Estimated model:
+\begin{eqnarray*}
+\widehat{\text{Turnout 2006}}_i & = & `r round(lm_out$coef[1], 2)`   + `r round(lm_out$coef[2], 3)`  \left( \text{Age}_i \right) + `r round(lm_out$coef[3], 2)`  \left( \text{Turnout 2004}_i \right) + \\
+&& `r round(lm_out$coef[4], 2)` \left( \text{Neighbors}_i \right)
+\end{eqnarray*}
+
+\pause 
+
+Coefficients: how much 1-unit difference in predictor affects my prediction for turnout in 2006, _assuming the other predictors do not change_. (The _ceteris paribus_ assumption.) Sometimes a valid assumption, sometimes not.
+
+##
+
+If compare two registrants, _ceteris paribus_, ages differ by 10 years, how much would turnout probability prediction differ?
+
+\pause 
+
+\begin{eqnarray*}
+\widehat{\text{Turnout 2006}}_1 & = & `r round(lm_out$coef[1], 2)`   + `r round(lm_out$coef[2], 3)`  \left( \text{Age}_1 \right) + `r round(lm_out$coef[3], 2)`  \left( \text{Turnout 2004}_1 \right) + \\
+&& `r round(lm_out$coef[4], 2)` \left( \text{Neighbors}_1 \right) \\ \pause 
+\widehat{\text{Turnout 2006}}_2 & = & `r round(lm_out$coef[1], 2)`   + `r round(lm_out$coef[2], 3)`  \left( \text{Age}_1 + 10 \right) + `r round(lm_out$coef[3], 2)`  \left( \text{Turnout 2004}_1 \right) + \\
+&& `r round(lm_out$coef[4], 2)` \left( \text{Neighbors}_1 \right) 
+\end{eqnarray*}
+
+\pause 
+
+\begin{eqnarray*}
+\widehat{\text{Turnout 2006}}_2 - \widehat{\text{Turnout 2006}}_1 & = & `r round(lm_out$coef[2], 3)`  \left( \text{Age}_1 + 10 \right) - `r round(lm_out$coef[2], 3)`  \left( \text{Age}_1 \right) \\ \pause 
+& = & `r round(lm_out$coef[2], 3)` \times 10 \\ \pause 
+& \approx & `r round(lm_out$coef[2] * 10, 3)`
+\end{eqnarray*}
+
+
+\pause 
+
+Not causal.
+
+
+
+
+# Heterogeneous Treatment Effects
+
+## Heterogeneous Treatment Effects
+
+\Large
+Often, believe $\tau_i$ vary systematically by some $X$.  
+
+\pause 
+
+>- Reserved seats for women may only produce more water projects in _larger_ villages, e.g.
+>- Reserved seats may produce _fewer_ water projects in small villages
+
+## A Test for Heterogeneity
+
+\Large
+
+>- "Heterogeneity" is $\text{Var}(\tau_i) \neq 0$
+>- If no heterogeneity, then $\text{Var}(Y_i(1)) = \text{Var}(Y_i(0))$ \pause  
+  $\rightsquigarrow$ null hypothesis
+
+\pause 
+RI test for heterogeneity:
+
+>- Calculate observed diff-in-variances
+>- Assume $\tau_i = \widehat{\tau}$
+>- Impute missing potential outcomes
+>- Create reference dist'n of 1000 diff-in-variances
+>- $p$-value $=$ prop of ref dist'n as extreme or more extreme than observed diff-in-variances.
+
+## Testing for Heterogeneity
+
+```{r warning = FALSE}
+obs_diff_in_vars <- var(seats$water[seats$reserved == 1]) -
+  var(seats$water[seats$reserved == 0])
+```
+
+\pause 
+```{r warning = FALSE}
+obs_diff_in_vars
+```
+
+## Testing for Heterogeneity
+
+<!-- \large -->
+```{r warning = FALSE}
+n_perms <- 2000               # how many permutations
+store_dvs <- rep(NA, n_perms) # storage
+base_assg <- c(rep(0, 214), rep(1, 108))
+```
+
+\pause 
+
+```{r warning = FALSE}
+for(i in 1:n_perms){
+  perm_tr <- sample(base_assg)
+  diff_in_var <- var(seats$water[perm_tr == 1]) -
+    var(seats$water[perm_tr == 0])
+  store_dvs[i] <- diff_in_var
+}
+```
+
+\pause 
+
+```{r warning = FALSE}
+p_val <- mean(abs(store_dvs) >= abs(obs_diff_in_vars))
+
+p_val
+```
+
+\pause 
+
+Since $p < \alpha = 0.05$, reject null of "no heterogeneity".
+
+## Heterogeneous Effects
+
+\large 
+
+If evidence or theory for heterogeneous effects, estimate them!
+
+\pause 
+
+Estimand: Conditional Average Treatment Effect (CATE)
+
+\pause 
+
+\begin{eqnarray*}
+CATE & = & E(Y_1 - Y_0 | X = x)\\
+& = & E(Y_1 | X = x) - E(Y_0 | X = x)
+\end{eqnarray*} 
+
+## Estimating Heterogeneous Treatment Effects
+
+\Large
+
+>- Subset on covariate $X$, estimate ATE within subsets
+>- Estimate with interaction term in single model
+
+
+##  Interaction Terms for Heterogeneous Effects
+
+>- Add predictor variable representing subgroups in multiple regression equation
+>- "Interact it with" (i.e., multiply it by) treatment to get us treatment effect in subgroups
+
+\pause 
+
+```{r warning = FALSE}
+lm_out <- lm(primary2006 ~ primary2004 +
+               messages + primary2004:messages, 
+             data = social.neighbor)
+summary(lm_out)$coef |> round(3)
+```
+
+***
+
+Estimated model:
+
+\begin{eqnarray*}
+\widehat{\text{Turnout 2006}}_i & = & `r round(lm_out$coef[1], 2)`   + `r round(lm_out$coef[2], 2)`  \left( \text{Turnout 2004}_i \right) + `r round(lm_out$coef[3], 2)`  \left( \text{Neighbors}_i \right) + \\
+&& `r round(lm_out$coef[4], 2)` \left( \text{Turnout 2004}_i \right) \left( \text{Neighbors}_i \right)
+\end{eqnarray*}
+
+\pause 
+
+Calculate
+
+1. Predicted turnout prob under `Control`, if no 2004 vote? \pause 
+1. Predicted turnout prob under `Neighbors`, if no 2004 vote?\pause 
+1. Treatment effect for those who didn't vote in 2004?
+\pause 
+1. Predicted turnout prob under `Control`, if voted in 2004?
+1. Predicted turnout prob under `Neighbors`, if voted in 2004?
+1. Treatment effect for those who voted in 2004?
+
+##  Interaction Terms for Heterogeneous Effects
+
+\begin{eqnarray*}
+\widehat{\text{Turnout 2006}}_i & = & \beta_0 + \beta_1 X_i + \beta_2 T_i + \beta_3 X_i T_i \\ \pause & = & \underbrace{\beta_0}_{\bar{Y} \text{ if } (0,0)} + \underbrace{\beta_1}_{\bar{Y} \text{ if } X_i = 1} X_i + \underbrace{\beta_2}_{\text{ATE if } X_i = 0} T_i + \underbrace{\beta_3}_{\text{HTE}} X_i T_i \\ \pause 
+\widehat{\text{Turnout 2006}}_i & = & \underbrace{`r round(lm_out$coef[1], 2)`}_{\bar{Y} \text{ for } (0,0), \text{ Prior Nonvoters, Control}} + \\ 
+&& \underbrace{`r round(lm_out$coef[2], 2)`}_{\text{Additional } \bar{Y} \text{for Prior Voters}} \left( \text{Turnout 2004}_i \right) + \\
+&& \underbrace{`r round(lm_out$coef[3], 2)`}_{\text{ATE for Prior Nonvoters;  part of ATE for Prior Voters}} \left( \text{Neighbors}_i \right) + \\
+&& \underbrace{`r round(lm_out$coef[4], 2)`}_{\text{Additional ATE for Prior Voters}} \left( \text{Turnout 2004}_i \right) \left( \text{Neighbors}_i \right)
+\end{eqnarray*}
+
+<!-- && \underbrace{`r round(lm_out$coef[4], 2)`}_{Additional ATE for Prior Voters} \left( \text{Turnout 2004}_i \right) \left( \text{Neighbors}_i \right) -->
+<!-- \end{eqnarray*} -->
+
+
+***
+
+\large
+
+Exercise:
+
+Consider the data on UK MP candidates at http://j.mp/32PHfFd
+
+1. Read the data into R and name it `mps`
+2. Create a new variable called `winner`.  Set it equal to `1` if `margin` is greater than 0; set it to `0` if `margin` is less than zero.
+3. Consider `winner` to be a randomly assigned treatment.  Estimate the causal effect of `winner` on `ln.net`, net worth at death of these candidates.
+4. Investigate whether the effect of `winner` varies by `party`.
+
+
+
+
+
+## Quantile Average Treatment Effects
+
+\large
+
+A _quantile_ is a cut-point, or a position, in a statistical distribution. 
+
+\pause 
+
+What is the name for the value that has 
+
+>- half the values below it?
+>- $\frac{3}{4}$ of the values below it?
+>- $\frac{1}{5}$ of the values below it?
+>- \ldots
+
+\pause 
+
+These are _quantiles_.
+
+
+## Quantile Average Treatment Effects (data)
+
+```{r message=FALSE}
+set.seed(326370675) 
+n <- 1000 
+Y1 <- Y0 <- runif(n) 
+# If low baseline, negative TE:
+Y1[Y0 <.5] <- Y0[Y0 <.5] - rnorm(length(Y0[Y0 <.5]))
+# If high baseline, positive TE:
+Y1[Y0 >.5] <- Y0[Y0 >.5] + rnorm(length(Y0[Y0 >.5]))
+D <- sample((1:n) %% 2)  # Assign 0/1
+Y <- D * Y1 + (1 - D) * Y0  # Y_obs
+samp <- tibble(D, Y)
+library(quantreg)
+ate <- coef(lm(Y ~ D, data = samp))[2]
+qtes <- rq(Y ~ D, 
+          tau = seq(.05, .95, length.out = 10), # At what positions to estimate?
+          data = samp, method = "fn")
+```
+
+\pause 
+(See https://bit.ly/3dnNhGP) 
+
+*** 
+
+```{r echo=FALSE, warning=FALSE}
+plot(summary(qtes), parm = 2, main = "", ylab = "QTE", xlab="Quantile", mar = c(5.1, 4.1, 2.1, 2.1))
+```
+
+## Quantile Average Treatment Effects (new data)
+
+```{r message=FALSE}
+set.seed(21578100) 
+n <- 1000 
+Y1 <- Y0 <- runif(n) 
+# If low baseline, zero TE:
+Y1[Y0 <.5] <- Y0[Y0 <.5] 
+# If high baseline, positive TE:
+Y1[Y0 >.5] <- Y0[Y0 >.5] + rnorm(length(Y0[Y0 >.5]))
+D <- sample((1:n) %% 2)  # Assign 0/1
+Y <- D * Y1 + (1 - D) * Y0  # Y_obs
+samp <- tibble(D, Y)
+
+ate <- coef(lm(Y ~ D, data = samp))[2]
+qtes <- rq(Y ~ D, 
+          tau = seq(.05, .95, length.out = 10), 
+          data = samp, method = "fn")
+```
+
+*** 
+
+```{r echo=FALSE, warning=FALSE}
+plot(summary(qtes), parm = 2, main = "", ylab = "QTE", xlab="Quantile", mar = c(5.1, 4.1, 2.1, 2.1))
+```
+
+# Inference for Experiments using Regression Adjustment
+
+## Inference for Experiments using Regression Adjustment
+
+@lin13 compares several estimates of SE for linear models with experimental data, adjusting for covariates $x$.
+
+Tailored for fixed-sample, variation-from-assignment situations.
+
+\pause 
+
+"Sandwich" estimators of variance:
+
+\pause 
+
+$$Var\left( \widehat{\beta_{\text{OLS}}}\right) = (X'X)^{-1}(X' \text{diag}(\hat{\epsilon}_1, \ldots, \hat{\epsilon}_n) X)(X'X)^{-1}$$
+
+## Inference for Experiments using Regression Adjustment
+
+\large
+
+Model:
+
+$$Y_i = \beta_0 + \beta_1 T_i + \beta_2 (x_i - \bar{x}) + \beta_3 T_i (x_i - \bar{x}) + \epsilon_i$$
+\pause 
+
+"Full set of treatment by (demeaned) covariate interactions"
+
+\pause 
+
+Then, use "sandwich" HC2 standard errors.
+
+\pause 
+
+Causal estimate:
+$$\widehat{ATE}_{\text{interact}} = \hat{\beta}_1$$ 
+
+## Inference for Experiments using Regression Adjustment
+
+\large
+
+Result: SE's that are
+
+\pause 
+
+>- Consistent under heteroskedasticity
+>- At least as efficient as usual $\widehat{ATE}_{\text{OLS}}$ 
+>- More efficient if $n_T \neq n_C$
+>- Doesn't _hurt_ precision  
+($\widehat{ATE}_{\text{OLS}}$ does if $x$ varies more with $\tau_i$ than $Y_1$, $Y_0$, e.g.)
+
+## Inference for Experiments using Regression Adjustment
+
+\large
+Recovering the ATE
+
+Suppose categorical $G$ with 2 levels. Let $G_i$ be indicator for first level. Expect heterogeneous treatment effects.
+
+\pause 
+
+\begin{equation}
+Y_i = \beta_0 + \beta_1 T_i + \beta_2 G_i + \beta_3 T_i G_i + \epsilon_i
+\end{equation}
+
+\pause 
+
+What's $\widehat{ATE}$? \pause Not $\hat{\beta}_1$. \pause Not $\hat{\beta}_1 + \hat{\beta}_3$. \pause 
+
+(Need to weight by how many of each $G$ type we have.)
+
+## Inference for Experiments using Regression Adjustment
+
+\large
+Recovering the ATE
+
+
+$$Y_i = \beta_0 + \beta_1 T_i + \beta_2 (G_i - \bar{G}) + \beta_3 T_i (G_i - \bar{G}) + \epsilon_i$$
+
+\pause 
+
+What's $\widehat{ATE}$? 
+
+\pause 
+
+$$\hat{\beta}_1$$
+
+\pause 
+
+What's $\widehat{ATE}$ for $G_i = 1$ group?
+
+\pause 
+
+\begin{eqnarray*}
+\widehat{ATE}_{G1} & = & \hat{\beta}_1 + \hat{\beta}_3 (1-\bar{G}) \\ \pause 
+& = & \hat{\beta}_1 + \hat{\beta}_3 \times (\text{prop. of } G=0)
+\end{eqnarray*}
+
+## Inference for Experiments using Regression Adjustment
+
+\large
+Recovering the ATE
+
+$$Y_i = \beta_0 + \beta_1 T_i + \beta_2 (G_i - \bar{G}) + \beta_3 T_i (G_i - \bar{G}) + \epsilon_i$$
+\pause 
+
+What's $\widehat{ATE}$ for $G_i = 0$ group?
+
+\pause 
+
+\begin{eqnarray*}
+\widehat{ATE}_{G0} & = & \hat{\beta}_1 + \hat{\beta}_3 (0-\bar{G}) \\ \pause 
+& = & \hat{\beta}_1 - \hat{\beta}_3\bar{G} \\ \pause 
+& = & \hat{\beta}_1 - \hat{\beta}_3 \times (\text{prop. of } G=1) \pause 
+\end{eqnarray*}
+
+## Inference for Experiments using Regression Adjustment
+
+\large
+So, to adjust for covariates in experimental data, 
+
+1. Estimate
+
+$$Y_i = \beta_0 + \beta_1 T_i + \beta_2 (x_i - \bar{x}) + \beta_3 T_i (x_i - \bar{x}) + \epsilon_i$$
+
+2. Use HC2 standard errors (or analogous CR2 for clustered designs)
+
+```{r eval=FALSE}
+library(estimatr)
+lm_robust(y ~ t + I(x - mean(x)) + t * I(x - mean(x)), 
+          data = df)
+```
+
+## Inference for Experiments using Regression Adjustment
+
+\large
+
+So, to adjust for covariates $x$ in experimental data, 
+
+\vspace{5mm}
+
+```{r estlin, eval=FALSE}
+lm_lin(y ~ t, covariates = ~ x, data = df)
+```
+
+
+## Inference for Experiments using Regression Adjustment
+
+With two levels of treatment, 
+
+$$Y_i = \beta_0 + \beta_1 T1_i + \beta_2 T2_i + \beta_3 (x_i - \bar{x}) + \beta_4 T1_i (x_i - \bar{x}) +
+\beta_5 T2_i (x_i - \bar{x}) + \epsilon_i$$
+
+\pause 
+etc.
+
+# "Controlling for Blocks"
+
+## Beware LSDV: "controlling for blocks"
+
+\large
+
+A first-thought for estimating ATE for blocked design \ldots
+
+\pause 
+
+Estimate linear model with indicators for each block:
+
+$$Y_i = \beta_0 + \beta_1 T_i + \gamma_1 B_{i1} + \gamma_2 B_{i2} + \ldots + \epsilon_i$$
+
+## Beware LSDV: "controlling for blocks"
+
+However, when
+
+1. TE varies by block
+2. $P(T=1)$ varies by block
+
+\pause 
+
+Using "block fixed effects" or "controlling for block IDs" is 
+
+\pause 
+
+>- biased for the estimate (ATE)
+>- biased for the standard error ($SE(ATE)$)
+>- worse than most everything else!
+
+## Beware LSDV: "controlling for blocks"
+
+```{r figcontrolblocks, echo=FALSE}
+img <- readPNG("figs/04-controlling_blocks.png")
+grid.raster(img)
+```
+
+## Beware LSDV: "controlling for blocks"
+
+The intuition: regression over-weights high-variance blocks
+
+```{r figregressionweight, echo=FALSE}
+img <- readPNG("figs/04-control_blocks_table.png")
+grid.raster(img)
+```
+
+\vspace{10mm}
+
+https://declaredesign.org/blog/biased-fixed-effects.html  
+(also, https://blogs.worldbank.org/impactevaluations/your-go-regression-specification-biased-here-s-simple-way-fix-it)
+
+## Beware LSDV: "controlling for blocks"
+
+\large
+
+>- Should I adjust for continuous $x$, or block IDs, where blocks come from coarsened $x$?
+>- If both TE and Tr Prob vary across blocks, use **block IDs** to remove bias  
+(since those determine assignment)
+>- In all 4 of the "probabilities vary/constant" by "treatment effects vary/constant" possibilities, using **both** the IDs and the variables themselves feels like overkill, but performs well.
+
+## (Related note: regression weights the cases)
+
+\vspace{-6mm} 
+
+```{r figregweightworld, echo=FALSE}
+img <- readPNG("figs/04-regression_weights.png")
+grid.raster(img, width=1)
+```
+
+\vspace{-6mm}
+
+- @arosam16 shows how multiple regression weights its cases
+- Interp: for causal inf., need causal methods, not just regression $+$ representative sample
+
+# Nonlinear Terms
+
+## Terms to Capture Nonlinear Relationships
+
+Let's take a step back from causal inference, and just think about trying to model the relationship between turnout probability and age.
+
+```{r warning = FALSE, results = 'hide', echo = FALSE}
+social.neighbor <- social.neighbor[sample(1:nrow(social.neighbor), 20000, replace = FALSE), ]
+```
+
+***
+
+```{r warning = FALSE, fig.height=5.5}
+# Calculate turnout prop for every year of age:
+prop_turnout <- tapply(social.neighbor$primary2006,
+                       social.neighbor$age, mean)
+# Plot:
+plot(prop_turnout ~ names(prop_turnout), xlab = "Age", 
+     ylab = "Prop Turnout in Primary 2006", pch = 16)
+```
+
+***
+
+This looks like a nonlinear relationship.  Let's include an age-squared term to try to model this nonlinearity:
+
+```{r warning = FALSE}
+lm_out <- lm(primary2006 ~ age + I(age^2), 
+             data = social.neighbor)
+lm_out
+```
+
+***
+
+The estimated model is 
+
+$$\widehat{\text{Turnout 2006}}_i = `r round(lm_out$coef[1], 5)`  + `r round(lm_out$coef[2], 5)`  \left( \text{Age}_i \right) + `r round(lm_out$coef[3], 5)`  \left( \text{Age}^2_i \right)$$
+
+1. What is the predicted turnout probability for a 30-year-old?
+1. What is the predicted turnout probability for a 60-year-old?
+1. What is the predicted turnout probability for a 80-year-old?
+1. What is the predicted turnout probability for a 90-year-old?
+
+***
+
+\large
+
+```{r warning = FALSE}
+predict(lm_out, data.frame(age = 40))
+predict(lm_out, data.frame(age = 60))
+predict(lm_out, data.frame(age = 80))
+predict(lm_out, data.frame(age = 100))
+```
+
+***
+
+We can also look at all the predicted values:
+
+```{r warning = FALSE, fig.height=5}
+plot(lm_out$fitted.values ~ social.neighbor$age, 
+     xlab = "Age", ylab = "Predicted Turnout")
+```
+
+<!-- (Note: this is `r nrow(social.neighbor)` predicted values!) -->
+
+# How Causal Inference is Different
+
+## Data Science Approaches
+
+\Large 
+
+Three tasks of data science:
+
+\pause 
+
+>- Description
+>- Prediction
+>- Causal Inference
+
+\pause 
+\vspace{1mm}
+
+Models/algorithms central to all three.
+
+\pause 
+\vspace{1mm}
+
+@herhsuhea19
+
+## Data Science Approaches
+
+\Large 
+
+Description
+
+>- Identifying patterns, etc.
+>- E.g., clustering to discover groups
+
+## Data Science Approaches
+
+\Large 
+
+Prediction
+
+>- Components
+>    - Inputs/outputs  
+(predictors/outcomes, features/responses, \ldots)
+>    - Mapping from inputs to outputs  
+(linear model, decision tree, \ldots)
+>    - Metric for evaluating mapping
+>- With these, model/machine learning algorithm does the work
+>- E.g., regression, random forests, neural networks, \ldots
+
+## Data Science Approaches
+
+\large
+
+Causal Inference
+
+>- Potential outcomes/counterfactual/interventionist perspective
+>- Requires _expertise_ different to description/prediction
+>- Requires more than summary statistics, metrics, etc.
+>- Requires some knowledge of causal structure
+>    - Not all inputs treated same
+>    - $T$ v. $\mathbf X$ -- very different!
+>    - (the more knowledge, the better!)
+>    - (alternative: solve fundamental problem of causal inference! \smiley )
+>- E.g., experiments, observational causal designs, \ldots
+
+<!-- ## Causal Inference with Machine Learning -->
+
+<!-- \pause  -->
+
+<!-- ![Don't do this.](figs/01-ml-ols-tweet.png) -->
+<!-- \pause  -->
+
+<!-- Don't do this. -->
+
+<!-- \pause  -->
+
+<!-- (Not "machine learning", probably, but _models_ at least \ldots) -->
+
+## Causal Inference with Models
+
+```{r}
+#| echo: false
+library(quartets)
+
+data("causal_confounding")
+df1 <- causal_confounding
+
+data("causal_collider")
+df2 <- causal_collider
+```
+
+Consider two loaded datasets:
+
+\pause 
+
+```{r}
+str(df1)
+str(df2)
+```
+
+## Causal Inference with Models
+
+```{r message=FALSE}
+#| echo: false
+#| layout-ncol: 1
+
+p1 <- ggplot(df1, aes(exposure, outcome)) + 
+  geom_point(aes(color = covariate)) + geom_smooth(method = "lm") +
+  labs(title = "Data set 1")
+
+p2 <- ggplot(df2, aes(exposure, outcome)) + 
+  geom_point(aes(color = covariate)) + geom_smooth(method = "lm") +
+  labs(title = "Data set 2")
+
+p1
+```
+
+## Causal Inference with Models
+
+```{r message=FALSE}
+#| echo: false
+#| layout-ncol: 1
+p2
+```
+
+
+<!-- ## Causal Inference with Models -->
+
+<!-- ```{r} -->
+<!-- #| echo: false -->
+<!-- #| layout-ncol: 2 -->
+<!-- p1 -->
+<!-- p2 -->
+<!-- ``` -->
+
+## Causal Inference with Models
+
+Model each
+
+```{r}
+lm_df1 <- lm(outcome ~ exposure, data = df1)
+lm_df2 <- lm(outcome ~ exposure, data = df2)
+```
+
+```{r}
+#| echo: false
+
+tidy_df1 <- tidy(lm_df1) |> mutate(data = "df1", .before = "term") |> select(data:std.error)
+tidy_df2 <- tidy(lm_df2) |> mutate(data = "df2", .before = "term") |> select(data:std.error)
+tidy_df12 <- bind_rows(tidy_df1, tidy_df2)
+tidy_df12
+```
+
+\pause 
+
+>- Both cases: effect of exposure $\approx 1$. 
+>- Is this good? Is it correct?  
+>- What if we adjust for covariate?
+
+## Causal Inference with Models
+
+```{r}
+lm_df1_adj <- lm(outcome ~ exposure + covariate, data = df1)
+lm_df2_adj <- lm(outcome ~ exposure + covariate, data = df2)
+```
+
+```{r}
+#| echo: false
+
+tidy_df1_adj <- tidy(lm_df1_adj) |> mutate(data = "df1", .before = "term") |>
+  filter(term != "(Intercept)") |> select(data:std.error)
+tidy_df2_adj <- tidy(lm_df2_adj) |> mutate(data = "df2", .before = "term") |> 
+  filter(term != "(Intercept)") |> select(data:std.error)
+tidy_df12_adj <- bind_rows(tidy_df1_adj, tidy_df2_adj)
+tidy_df12_adj
+```
+
+>- Both cases: effect of exposure $\approx 0.5$. 
+>- Is this good? Is it correct?  
+>- Which is correct? $\beta = 1$? $\beta = 0.5$?
+>- _Should_ we adjust for covariate?
+
+## Causal Inference with Models
+
+\Large
+There is nothing in the data that tells us. \pause \frownie
+
+\pause 
+
+Here are the true structures: First
+
+```{r quartetdags}
+#| echo: false
+#| fig-height: 6
+#| layout-ncol: 1
+coords <- list(x = c(T = 0, X = 1, Y = 2), 
+               y = c(T = 1, X = 0, Y = 1.1))
+dag_conf <- dagify(Y ~ T, T ~ X, Y ~ X, coords = coords) 
+ggdag_conf <- dag_conf |> 
+  ggdag_classic(size = 30) + theme_dag_blank() 
+
+coords <- list(x = c(T = 0, X = 1, Y = 2), 
+               y = c(T = 1, X = 0, Y = 1.1))
+dag_coll <- dagify(Y ~ T, X ~ T, X ~ Y, coords = coords) 
+ggdag_coll <- dag_coll |> 
+  ggdag_classic(size = 30) + theme_dag_blank()
+
+ggdag_conf
+#ggplot(NULL) + theme(panel.background = element_blank())
+#ggdag_coll
+```
+
+## Causal Inference with Models
+
+\Large
+There is nothing in the data that tells us. \frownie
+
+Here are the true structures: Second
+
+```{r}
+#| echo: false
+#| fig-height: 6
+#| layout-ncol: 1
+ggdag_coll
+```
+
+
+## Causal Inference with Models
+
+When know structures, adjustment sets for unbiasedness differ: \pause 
+
+>- `df1`: confounding $\Rightarrow$ **adjust for $X$**
+>- `df2`: collider $\Rightarrow$ **do not adjust for $X$**
+
+\pause 
+
+```{r}
+g_conf <- dagitty("dag{ x -> y ; x <- c -> y }")
+g_coll <- dagitty("dag{ x -> y ; x -> c <- y }")
+```
+
+\pause 
+
+```{r}
+adjustmentSets(g_conf, "x", "y")
+```
+
+\pause 
+
+```{r}
+adjustmentSets(g_coll, "x", "y")
+```
+
+## Causal Inference with Models
+
+When know structures, adjustment sets for unbiasedness differ:
+
+- `df1`: confounding $\Rightarrow$ **adjust for $X$**
+- `df2`: collider $\Rightarrow$ **do not adjust for $X$**
+
+```{r quartetdagadjustments, fig.height=6}
+#| echo: false
+#| layout-ncol: 1
+
+dag_conf |> ggdag_adjustment_set(exposure = "T", outcome = "Y")
+#dag_coll |> ggdag_adjustment_set(exposure = "T", outcome = "Y")
+```
+
+
+
+## Causal Inference with Models
+
+\large
+
+So, correct adjustments to reveal causal effect of $T \rightsquigarrow Y$:
+
+\pause 
+
+`df1`, **adjust** for $X$, $\beta = 0.5$:
+```{r}
+#| echo: false
+
+tidy_df1_adj |> filter(term == "exposure")
+```
+
+`df2`, **do not adjust** for $X$, $\beta = 1$:
+```{r}
+#| echo: false
+
+tidy_df2 |> filter(term == "exposure")
+```
+
+\pause 
+
+(Data from @dagostino23)
+
+## Causal Inference with Models
+
+\large
+
+>- Importance of identifying "pre-treatment covariates", "proper covariates"; doing "design before analysis"
+>- Importance of experiments: strong knowledge about (part of) causal structure -- assgn mechanism
+>- Causal inference is critical to scientific questions, and separate from prediction
+>- Though, methods from prediction can aid causal inference (see, especially, _causal forests_)
+>- "Causal euphimisms" don't help [@hernan18]
+
+
+## References {.allowframebreaks}
+
+\footnotesize
