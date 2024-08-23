@@ -1,0 +1,269 @@
+---
+title: | 
+    | 10 Experiments in Public Policy \newline and What We Can Learn From Them
+author: "Ryan T. Moore"
+date: 2024-08-23
+date-format: iso
+execute: 
+  echo: true
+format: 
+  beamer:
+    fonttheme: serif
+    include-in-header:
+      - text: | 
+          \usepackage{wasysym} 
+      - file: zzz_beamer_header.tex
+    section-titles: true
+    toc: true
+institute:
+  - American University
+  - The Lab @ DC
+  - US Office of Evaluation Sciences (OES)
+linkcolor: blue
+bibliography: "../admin/main.bib"
+---
+
+```{r}
+#| label: setup
+#| echo: false
+#| message: false
+#| results: false
+#| warning: false
+
+library(here)
+library(tidyverse)
+```
+
+# About Me
+
+## About Me
+
+\Large
+
+- Associate Prof of Government  
+(American University)
+- Associate Director, Center for Data Science  
+(American University) \pause 
+- **Senior Social Scientist**  
+**(The Lab @ DC)**
+- **Fellow in Methodology**
+**(US Office of Evaluation Sciences: "OES")**
+
+# Why this talk, here?
+
+## Waseda University Mission
+
+\pause 
+
+\Large
+
+"Waseda University pledges to contribute to the progress of the times by establishing **a path for the practical use of scholarship** as well as pursuing theoretical research for its own sake."
+
+\vspace{2mm}
+
+![](figs/04-waseda-plaque.png){width=35% fig-align="center"}
+
+## Goals
+
+\Large
+
+>- Inspire your thinking about what _could_ be an experiment (our best hope for causal inference)
+>- Introduce you to some results from experiments in the field
+>- Draw out lessons for applied and community-based research
+
+# Ten Randomized Experiments in Public Policy
+
+## Ten Randomized Experiments in Public Policy
+
+\large
+
+1. [Seguro Popular](https://www.ryantmoore.org/files/papers/SPeval.pdf)
+3. [911 Nurse Triage Line](https://www.ryantmoore.org/files/papers/24-ntl.pdf)
+4. [Welfare Recertification, TANF](https://www.ryantmoore.org/files/papers/22_tanf_recert.pdf)
+5. [Retirement Savings, 457b](https://thelabprojects.dc.gov/retirement-saving)
+6. [Police Body-Worn Cameras](https://thelabprojects.dc.gov/body-worn-cameras)
+8. [Flexible, Shallow Rent Housing Subsidy](https://www.ryantmoore.org/files/papers/23-dcflex.pdf)
+7. [Police training, Nat Museum of African-American History and Culture](https://thelabprojects.dc.gov/historic-cultural-training)
+9. [Warning Taxpayers about Preparers](https://oes.gsa.gov/projects/client-tax-compliance/)
+10. [Opioid Buyback](https://oes.gsa.gov/projects/opioid-buyback/)
+2. [Fire Inspectors Risk-Score Lists]()
+
+
+
+## Seguro Popular
+
+\large
+
+- _Partner_: Mexican federal government and health bureaucracy
+- _Intervention_: Randomize federal health infrastructure spending, household insurance to Mexican households
+- _Finding_: Reduced catastrophic health expenditures for households
+- _A Lesson_: Applied work can inspire new methodological research
+
+\vspace{5mm}
+[@kingakrav07; @kingakima09]
+
+## Nurse Triage Line
+
+\large
+
+- _Partner_: DC Fire and Emergency Management Services
+- _Intervention_: Randomize whether 911 emergency callers talk to a nurse
+- _Finding_: Reduced ambulance dispatches, transports; increased primary care visits
+- _A Lesson_: Advocates matter. Even when it seems impossible, there may be a way. Effects can be huge.
+
+\vspace{5mm}
+[@wiljohhat24]
+
+## Welfare Recertification, TANF
+
+\large
+
+- _Partner_: DC Human Services
+- _Intervention_: Randomized whether households due to recertify received a behaviorally-informed reminder letter
+- _Finding_: Improved recertification rates, especially when we indicate flexibility
+- _A Lesson_: We can build _capacity_ in partners
+
+\vspace{5mm}
+[@mooganmin22]
+
+## Retirement Savings of Public Employees
+
+\large
+
+- _Partner_: DC Human Resources
+- _Intervention_: Randomized email with simplified decisions and present-framing future gains
+- _Finding_: Improved contributions for those _already_ contributing, but 0 new contributors
+- _A Lesson_: Human behavior is sticky!
+
+## Policy Body-worn Cameras
+
+\large
+
+- _Partner_: DC Metro Police Department
+- _Intervention_: Randomized whether police officers wore body-cameras
+- _Finding_: No detectable effects on police use of force, citizen complaints, police activity
+- _A Lesson_: Null effects can happen for many reasons, are important to share, and do not doom a program
+
+\vspace{5mm}
+[@yokravcop19]
+
+## DC Flex: Flexible, shallow subsidy
+
+\large
+
+- _Partner_: DC Housing and Homelessness agencies
+- _Intervention_: Flexible, shallow rent subsidy 
+- _Finding_: Null effects on homelessness, but decreased use of other services (first year)
+- _A Lesson_: Giving needy control can simplify administration without adverse outcomes
+
+[@avimammoo23]
+
+## Police Training at Nat'l Museum of African-American History and Culture
+
+\large
+
+- _Partner_: MPD, Nat Museum of African-American History and Culture
+- _Intervention_: Randomized training of police officers on history of race and policing
+- _Finding_: (Stay tuned!)
+- _A Lesson_: Experiments can be imperfect, and approximate observational studies
+
+
+## Warning Taxpayers about Preparers
+
+\large
+
+- _Partner_: US Tax Service (IRS)
+- _Intervention_: Letters to taxpayers with info about their tax preparers
+- _Finding_: Changed taxpayer filing behavior
+- _A Lesson_: Well-designed experiments can measure interference/spillovers
+
+## Opioid Buyback
+
+\large
+
+- _Partner_: Veterans Affairs Hospital
+- _Intervention_: Reminder card mailed one week after surgery
+- _Finding_: Improved rates of return by 30% (7pp)
+- _A Lesson_: Connect at a reasonable, appropriate moment
+
+## Fire Inspector Risk-Score Lists
+
+\large
+
+- _Partner_: DC Fire Inspectors
+- _Intervention_: Randomize whether inspectors receive lists of buildings that come from *high risk scores* or *all risk scores*
+- _Finding_: (Stay tuned!)
+- _A Lesson_: We can combine data science predictive modeling and field experiments fruitfully; models should be validated in the field.
+
+# Lessons
+
+## Lessons
+
+\Large
+
+>- Relationships
+>    - Collaboration
+>    - Informing decisions
+>    - Understanding implementers' goals
+>- Registration
+>    - Avoid $p$-hacking, fishing, HARKing
+>    - Catch data you still need
+>    - Toward "Standard Operating Procedures" (see [here](https://rtm-dc.github.io/LAB-SOP-experiments/))
+>- Ride Along
+>    - Understand how implementers view data
+>    - Gain technical knowledge of context, processes  
+(EMS, pothole team, fire inspectors, \ldots)
+>    - Fastest way to learn: watch the experts
+
+## Lessons
+
+\Large
+
+>- Applications reveal new statistical problems
+>    - Design evaluations robust to _politics_
+>    - Block on many predictors
+>    - Clustered designs
+>    - Sequential blocking
+>    - Rerandomization for interference
+>    - Asymmetric eligibility
+>- Help build capacity
+>- What data to ask for?
+>    - The raw data
+>    - The outcome, last time
+>- Attend to ethics
+>    - Avoid harm, gain consent
+>    - We are constantly "experimenting"
+>    - Resources are limited
+>    - Agents really do want to learn
+
+<!-- Include a PDF/PNG/... -->
+<!-- ![](figs/myfig.pdf){fig-align="center" height=80%} -->
+
+<!-- Include PDFs in columns -->
+<!-- \includegraphics[width=2in]{figs/myfig1.pdf} -->
+<!-- \includegraphics[width=2in]{figs/myfig2.pdf} -->
+
+***
+
+\huge
+
+\begin{center}
+Thank you \\ for an extraordinary week.
+
+Stay in touch!
+\end{center}
+
+\vspace{5mm}
+
+\large
+
+\begin{center}
+\tt{rtm@american.edu} \\
+\tt{www.ryantmoore.org}
+\end{center}
+
+
+## References {.allowframebreaks}
+
+\footnotesize
+

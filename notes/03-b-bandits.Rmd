@@ -1,0 +1,988 @@
+---
+title: | 
+    | Multiarm Bandits
+header-includes:
+  - \usepackage{datetime}
+  - \usepackage{amsmath}
+  - \usepackage{wasysym}
+  - \usepackage{color}
+date: "2024-08-22"
+author: Ryan T. Moore
+output:
+  beamer_presentation:
+    slide_level: 2
+    toc: true
+    fonttheme: serif
+    includes:
+      in_header: zzz_beamer_header.tex
+  pdf_document:
+    fig_caption: true
+    number_sections: true
+    urlcolor: blue
+link-citations: yes 
+bibliography: "../admin/main.bib"
+---
+  
+```{r knitr options, echo=FALSE, warning=FALSE}
+# Encoding required for proper knitr rendering
+options(encoding = "native.enc")
+```
+
+```{r enviro, warning = FALSE, results = 'hide', echo = FALSE, message = FALSE}
+
+library(xtable)
+library(knitr)
+library(png)
+library(grid)
+library(gridExtra)
+library(devtools)
+library(tidyverse)
+```
+
+# What's Your Strategy?
+
+***
+
+\pause 
+
+Suppose 10mins in room of slot machines, huge pile of tokens. \pause Goal: finish w/ \yen\yen\yen!
+
+\pause 
+
+What would you do?  Discuss!
+
+```{r fig.width=3, echo=FALSE}
+include_graphics("figs/06-one_armed.jpg")
+```
+
+
+## Multiarm Bandits
+
+\Large
+
+Simultaneously _identify_ and _play_ machine ("one-armed bandit") with biggest payoff.
+
+\pause 
+\vspace{7mm}
+
+\center
+
+_Explore_ all machines.  _Exploit_ best.
+
+
+## Political Multiarm Bandits
+
+```{r fig.width=3.5, echo=FALSE}
+include_graphics("figs/06-one_armed_treated.jpg")
+```
+
+## Multiarm Bandits
+
+\large 
+
+>- Goal: maximize some reward by ID best treatment arm
+>- An estimand: not the ATE, but $$P\left(E(R_{\text{this arm}}) > E(R_{\text{all other arms}})\right)$$ $$P\left(\text{this email's donations} > \text{all other emails' donations}\right)$$
+
+\pause
+
+Situation:
+
+- Testing many arms 
+- Political/policy goals alongside research goals
+- Sniderman's "sequential factorials" all at once
+
+## Multiarm Bandits
+
+\large 
+
+The "exploration vs exploitation" perspective  
+\hspace{10mm} @offcopgre21
+
+\pause 
+
+>- "_explore_ by obtaining information about the probability of success of each arm so that they can be confident in selecting the best arm or arms."
+>- "_exploit_ the best performing arms by allocating large proportions of subjects to them"
+>- $\Rightarrow \Leftarrow$
+
+# Intro to Adaptive Designs
+
+## Adaptive Designs
+
+\large
+
+>- Sequentially-blocked designs  
+("covariate adaptive", @moomoo13)
+>- Multiarm bandits  
+("outcome adaptive")
+>- (Bayesian) stopping rules  
+(strongly adaptive)
+
+## Stopping Rules
+
+```{r echo=FALSE}
+img <- readPNG("figs/06-tbll-stopping.png")
+grid.raster(img)
+```
+
+\pause 
+@toubriloh17
+
+## Traditional Adaptive Design Motivation
+
+\Large
+
+Very different statistical goals:
+
+\pause 
+
+1. Minimize variance
+2. Minimize non-response bias (or proxies)
+3. Maximize response rates
+
+\vspace{10mm}
+<!-- \pause  -->
+
+<!-- \normalsize -->
+@toubriloh17
+
+<!-- # Multiarm Bandit Designs -->
+
+# Multiarm Bandit Applications
+
+## @offcopgre21
+
+```{r echo=FALSE}
+img <- readPNG("figs/06-ocg-treats.png")
+grid.raster(img)
+```
+
+## @offcopgre21
+
+\Large
+A sample empirical finding:
+
+Right-to-work proposals tend to be more popular as _ballot measures_ than as _constitutional amendments_.
+
+# Multiarm Bandit Designs
+
+## Three Canonical Designs
+
+\LARGE
+
+- Thompson sampling
+- Upper confidence bound
+- $\epsilon$-greedy
+
+
+## Thompson Sampling
+
+\large
+
+>- Suppose emails $A$, $B$, $C$
+>- Let $\theta^A = P(\text{donation})$ from sending $A$, \ldots
+>- Assign next voter to email, w/ prob. that email is best
+
+\pause 
+
+Let $P(A \text{ best}) = .6$, $P(B \text{ best}) = .1$, $P(C \text{ best}) = .3$ 
+
+\pause 
+
+Then, assign next recipient to 
+
+- $A$ with prob 0.6
+- $B$ with prob 0.1 
+- $C$ with prob 0.3
+
+\pause
+- Also, "probability matching"
+
+
+## Thompson Sampling
+
+\large
+
+>- Let $k \in \{1, \ldots, K\}$ index arms $a$
+>- Let $\theta^k = P(\text{reward})$ from $a^k$
+>- (Or, $\theta^k = E(\text{reward})$ from $a^k$)
+
+>- Assign unit $i$ to treatment arm $a^k$ s.t. 
+
+\pause 
+
+\normalsize
+\begin{eqnarray*}
+P(\text{assign } a^k \text{ to } i) & = & P(a^k \text{ is best}) \\ \pause
+P(a_{i} = a^k) & = &  P(\theta^k > \theta^1 \text{ and } \theta^k > \theta^2 \text{ and } \ldots \text{ } \theta^k > \theta^K)
+\end{eqnarray*}
+
+\pause 
+
+\large
+
+>- Estimate the $\theta^k$ with $$\hat{\theta}^k = \text{Beta}(\alpha_0^k + \text{successes}, \beta_0^k + \text{failures})$$
+
+
+## True/False Quiz
+
+\large
+
+1. Multiarm bandits ignore outcomes when assigning treatments. 
+
+2. Multiarm bandits try to maximize rewards, not just estimate causal effects. 
+
+3. Thompson sampling assigns a unit to the treatments with equal probability. 
+
+
+## UCB Sampling
+
+\large
+
+>- Let $n_k$ be # units already assigned to $a^k$
+>- Calculate $\text{UCB}^k \equiv E[\hat{\theta}^k] + \sqrt{\frac{2 \ln N}{n_k}}$ for each $a^k$ 
+>- Assign unit $i$ to treatment $a^k$ iff  
+$\text{UCB}^k > \text{UCB}^1  \text{ and } \text{UCB}^k > \text{UCB}^2 \text{ and } \ldots \text{ and } \text{UCB}^k > \text{UCB}^K$
+>- Deterministic
+
+## $\epsilon$-greedy 
+
+>- Calculate $\hat{\theta}^k$ from, e.g., $\text{Beta}(\alpha_0^k + \text{successes}, \beta_0^k + \text{failures})$
+>- Assign unit $i$ to treatment $a^k$ with prob $1- \epsilon$ if $\hat{\theta}^k$ is largest
+>- Assign unit $i$ to treatment $a^{\sim k}$ with $\frac{\epsilon}{K -1}$ otherwise
+
+\pause 
+
+>- Can set $\epsilon = \text{min}\left(1, \frac{cK}{d^2n} \right)$
+>- As $n \to \infty$, $P(a^k)$ increases
+>- Tune with $c > 0$, $0<d<1$
+>- $\left( n = \sum n_k \right)$
+
+## Composite Designs
+
+<!-- Gittens ? -->
+
+\Large 
+
+- 90% assigned via Thompson sampling
+- 10% assigned via $a^i \sim \text{Unif}(a^1, a^2, \ldots, a^k)$
+
+\pause 
+
+>- Ensuring exploration
+>- @offcopgre21's _control-augmented_ algorithm
+>    - Intuition: try to keep $n_{\text{current best}} \approx n_{\text{control}}$ 
+
+
+# Some Bayesian Background
+
+## Law of Total Probability
+
+Decompose $P(A)$ into two components: $A$ happening when $B$ also happens, and $A$ happening when "not B" happens: $$P(A) = P(A \text{ and } B) + P(A \text{ and } B^C)$$
+
+\pause 
+
+Similarly, if $B_i$ events (a) are mutually exclusive, and (b) cover the entire sample space, then for $B_1$, $B_2$, ..., $B_N$, 
+
+$$P(A) = \sum\limits_{i=1}^N P(A \text{ and } B_i)$$
+
+## Bayes' Rule
+
+Joint probability $P(A \text{ and } B)$ is both $$P(A \text{ and } B) = P(A | B)P(B)$$ and $$P(A \text{ and } B) = P(B | A)P(A)$$
+
+\pause 
+
+Set equal, then
+
+\begin{eqnarray*}
+P(A | B)P(B) & = & P(B | A)P(A)\\
+P(A | B) & = & \frac{P(B | A)P(A)}{P(B)}
+\end{eqnarray*}
+
+\pause 
+
+>- $B$: the data we observe
+>- $P(A)$: _prior_ belief about likely values of $A$
+>- $P(A|B)$: _posterior_ estimate.  Includes both our prior belief $P(A)$, but updates using _likelihood_ of data, $P(B|A)$
+
+
+
+## Bayes' Rule
+
+\Large
+
+\begin{eqnarray*}
+\text{posterior} & = & \frac{\text{likelihood} \cdot \text{prior}}{\text{marginal}}\\
+& \propto & \text{likelihood} \cdot \text{prior}
+\end{eqnarray*}
+
+## General Bayes' Rule
+
+From law of total probability,
+
+\begin{eqnarray*}
+P(A | B) & = & \frac{P(B | A)P(A)}{P(B)}\\
+& = & \frac{P(B | A)P(A)}{P(B \text{ and } A) + P(B \text{ and } A^C)}\\
+& = & \frac{P(B | A)P(A)}{P(B|A)P(A) + P(B|A^C)P(A^C)}
+\end{eqnarray*}
+
+\pause 
+
+Extend to other partitions of $P(B)$.  If $A$ has 3 types, then,
+
+\begin{eqnarray*}
+P(A_1 | B) & = & \frac{P(B | A_1)P(A_1)}{P(B)}\\
+& = & \frac{P(B | A_1)P(A_1)}{P(B|A_1)P(A_1) + P(B|A_2)P(A_2) + P(B|A_3)P(A_3)}
+\end{eqnarray*}
+
+## General Bayes' Rule
+
+\Large 
+
+$$ P(A | B)  = \frac{P(B|A) P(A)}{\sum\limits_{i=1}^N P(B \text{ and } A_i)}$$
+
+- $A$: parameters we're interested in
+- $B$: the data we observe
+- $P(A)$: _prior_ belief about likely values of $A$
+- $P(A|B)$: _posterior_ estimate.  Includes both our prior belief $P(A)$, but updates using _likelihood_ of data, $P(B|A)$
+
+## Example
+
+In Boston, 30% of people are conservative, 50% are
+liberal, and 20% are independent.  In the last election, 65% of
+conservatives, 82% of liberals, and 50% of independents voted.  If a
+person in Boston is selected at random and we learn that she did not
+vote last election, what is the probability she is a liberal?
+
+## Beta-binomial Model
+
+\Large 
+
+Calculating $\hat{\theta}^k$
+
+\pause 
+
+>- Let our prior for $\theta \sim \text{Beta}(\alpha, \beta)$
+>- Let the DGP be $Y \sim \text{Bin}(n, \theta)$
+<!-- >- Let $s$ be number of successes -->
+>- Then, the posterior is 
+
+\pause 
+
+\begin{eqnarray*}
+posterior & \propto & \text{Beta}(\alpha, \beta) \cdot \text{Bin}(n, \theta) \\
+& \propto & \text{Beta}(\alpha + s, \beta + (s-n))
+\end{eqnarray*}
+
+\pause
+
+- What are these distributions?
+
+
+## Beta Distribution
+
+\large
+
+>- $x\in [0,1]$ -- a model for probability!
+>- $X\sim \text{Beta}(\alpha,\beta)$ 
+>- $\alpha,\beta > 0$, $\alpha-1$ successes, $\beta-1$ failures 
+>- $p(x) = \frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha) \Gamma(\beta)} x^{\alpha-1}(1-x)^{\beta-1}$ 
+>- $\text{Beta}(1,1) \sim \text{Unif}(0,1)$
+
+***
+
+```{r echo=FALSE}
+img <- readPNG("figs/06-beta-distn-wiki.png")
+grid.raster(img)
+```
+
+(Wikipedia, Feb 2019)
+
+
+## Binomial Distribution
+
+>- $n$ independent, identically distributed (iid) trials, binary outcome $0,1$. 
+>- ``Prob of $k$ successes in $n$ trials?'', $k \in \{0,\ldots, n\}$ 
+>- $X \sim Bin(n,p)$
+>- $p(X=k|n,p) = {n \choose k} p^k(1-p)^{n-k}$ 
+>- Sum of $n$ Bernoullis 
+>- Political examples:  
+>    - prob 3 of 6 opposing Senators support an amendment: $p(X=3|n=6, p=.3) =$ `dbinom(3, 6, prob = .3)` $\approx .19$ 
+>    - prob $\geq 3$ of 6 opposing Senators support an amendment: $p(X \geq 3|n=6, p=.3) =$ `1 - pbinom(2, 6, prob = .3)` $=$ `pbinom(2,6,prob=.3,lower.tail=FALSE)` $\approx .26$
+
+## Beta-binomial Model
+
+\Large 
+
+Calculating $\hat{\theta}^k$
+
+- Let our prior for $\theta \sim \text{Beta}(\alpha, \beta)$
+- Let the DGP be $Y \sim Bin(n, \theta)$
+- Let $s$ be number of successes
+- Then, the posterior is \ldots
+
+*** 
+
+\begin{eqnarray*}
+\text{posterior} & \propto & \text{prior} \cdot \text{likelihood}\\  \pause 
+P(\theta | Y) & = & \frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha) \Gamma(\beta)} \theta^{\alpha-1}(1-\theta)^{\beta-1} \cdot {n \choose s} \theta^s (1-\theta)^{n-s} \\ \pause 
+& = & \frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha) \Gamma(\beta)} \theta^{\alpha-1}(1-\theta)^{\beta-1} \cdot 
+\frac{n!}{s! (n - s)!} \theta^s (1-\theta)^{n-s} \\ \pause 
+& = & \frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha) \Gamma(\beta)} \cdot \frac{\Gamma(n + 1)}{\Gamma(s+1) \Gamma(n - s +1)} \cdot \\
+&& \quad \theta^{\alpha-1}(1-\theta)^{\beta-1} \cdot  \theta^s (1-\theta)^{n-s} \\ \pause 
+&= & \frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha) \Gamma(\beta)} \cdot \frac{\Gamma(n + 1)}{\Gamma(s+1) \Gamma(n - s +1)}\\
+&& \quad \theta^{\alpha + s -1}(1-\theta)^{\beta + (n-s) -1}  \\ \pause 
+&\propto & \text{Beta}(\alpha + s, \beta + (s-n)) 
+\end{eqnarray*}
+
+<!-- & = & \frac{\Gamma(\alpha+\beta + n + 1)}{\Gamma(\alpha + s + 1) \Gamma(\beta + n -s +1)} \cdot \\ -->
+<!-- && \quad \theta^{\alpha-1}(1-\theta)^{\beta-1} \cdot  \theta^s (1-\theta)^{n-s} \\ -->
+<!-- & = & \frac{\Gamma(\alpha+\beta + n + 1)}{\Gamma(\alpha + s + 1) \Gamma(\beta + n -s +1)} \cdot \\ -->
+<!-- && \quad \theta^{\alpha + s -1}(1-\theta)^{\beta + (n-s) -1}  \\ -->
+
+## Beta-binomial Model
+
+\large
+
+>- For binomial (sum of 0/1) outcome data, use Beta prior.
+>- Set $\alpha$, $\beta$ to be prior successes, failures
+>- Posterior (after data) distribution of $\theta$ is Beta
+>- Calculate $P(\theta^k > \theta^1)$, etc.
+
+
+
+
+
+## @offcopgre21
+
+
+<!-- ## What's a bake-off? -->
+
+
+\large
+
+>- Simulations we'll replicate below
+>- Experiment: Finding "best" arguments for ballot proposition elections (minimum wage, right-to-work proposals)
+>- Experiment: Finding "best" wording for ballot propositions in campaign finance 
+
+## @offcopgre21, Simulations
+
+```{r echo=FALSE}
+img <- readPNG("figs/06-ocg-bestarms.png")
+grid.raster(img)
+```
+
+## @offcopgre21, Arguments
+
+```{r echo=FALSE}
+img <- readPNG("figs/06-ocg-exp1-arguments.png")
+grid.raster(img)
+```
+
+## @offcopgre21, Wording
+
+Experiment: Finding "best" wording for ballot propositions in campaign finance 
+
+>- small conjoint $\rightsquigarrow 192$ profiles
+>- still too big to test them all w/ 1000 participants
+>- model-assisted, but still adaptive
+>- _less_ precision from adaptive than static conjoint \pause 
+
+\footnotesize
+
+$$SE(\widehat{ATE}) = \sqrt{\frac{1}{N-1} \left[ \frac{m \mathrm{Var}(Y_i(0))}{N-m} + \frac{(N-m)\mathrm{Var}(Y_i(1))}{m} +
+2\mathrm{Cov}(Y_i(0), Y_i(1)) \right]}$$
+
+\normalsize
+>- But \ldots
+
+***
+
+\ldots very best most likely to be best
+
+\vspace{5mm}
+
+```{r echo=FALSE}
+img <- readPNG("figs/06-ocg-conjoint.png")
+grid.raster(img)
+```
+
+## @kulpre14
+
+\large 
+
+Meta-bandit: pick the best _algorithm_ to pick the best arm.
+
+\pause 
+
+Parameters
+
+- number of treatment conditions  
+(2, 5, 10, 50)
+- $\text{Var}(Y)$  
+($\sigma \in \{0.01, 0.1, 1\}$)
+- reward distribution  
+(normal, triangular, uniform, inverse Gaussian, Gumbel)
+
+
+
+<!-- KL Divergence?  -->
+
+
+## 6 Algorithms Tested
+
+\large
+
+- $\epsilon$-greedy
+- Boltzmann exploration
+- Pursuit bandits
+- Reinforcement comparison
+- UCB
+- UCB1-Tuned 
+
+\pause 
+
+Roughly, 
+
+>- More variance in $Y$: more deterministic UCBs
+>- Many arms: $\epsilon$-greedy, softmax
+
+***
+
+```{r fig.width=5, echo=FALSE, fig.align='center'}
+img <- readPNG("figs/06-kulpre-2-arms.png")
+grid.raster(img)
+```
+
+***
+
+```{r fig.width=5, echo=FALSE, fig.align='center'}
+img <- readPNG("figs/06-kulpre-50-arms.png")
+grid.raster(img)
+```
+
+
+## Boltzmann Softmax
+
+\large
+
+- At one extreme, pure greedy algorithm
+- At other, uniform choice over $a$
+- Between, like Thompson  
+(but prob is proportional, not nec exactly posterior)
+- ("temperature" parameter like simulating annealing MCMC exploration)
+
+
+<!-- ## Gupta, Granmo, and Agrawala 2011 -->
+<!-- \large  -->
+<!-- _Dynamic_ bandits -->
+<!-- \pause  -->
+<!-- - Like Thompson, but weight more recent rewards more heavily -->
+
+
+## @janmoo20
+
+\Large
+
+Nonstationary contextual bandits
+
+\pause 
+
+>- "nonstationary": the underlying political world is changing
+>- "contextual": heterogeneous treatment effects  
+(e.g., one email for moderates, another for ideological extremes)
+
+\pause 
+
+(Lit has _great_ names: sleeping, adversarial, \ldots)
+
+## Political Environments
+
+```{r echo=FALSE}
+img <- readPNG("figs/06-switching_true_reward.png")
+grid.raster(img)
+```
+
+## @janmoo20
+
+\Large
+
+>- Nonstationary contextual bandits superior  
+(outperform stationary, noncontextual; OK if enviro is stationary, etc.)
+>- "Discounting" old info; "detecting" changes in reward probabilities.  Adapting those strategies.
+>- Causal inference intact  
+(despite sample sizes, tr probs, etc.)
+
+
+
+# Implementation
+
+## Implementation
+
+\Large
+
+See `code/03-bandits.R`.
+
+## Implementation
+
+\Large
+
+```{r eval=TRUE, message=FALSE}
+library(bandit)
+library(tidyverse)
+
+set.seed(590646161)
+```
+
+## Implementation
+
+\large 
+
+Clear two-arm trial:
+
+```{r eval=FALSE}
+successes <- c(50, 90)
+n <- c(100, 100)
+
+best_binomial_bandit(successes, n)
+```
+
+\pause 
+
+Guess posterior probabilities of being best?
+
+\pause
+
+```{r echo=FALSE}
+successes <- c(50, 90)
+n <- c(100, 100)
+
+best_binomial_bandit(successes, n)
+```
+
+## Implementation
+
+\large 
+
+Competitive two-arm trial:
+
+```{r eval=FALSE}
+successes <- c(50, 51)
+n <- c(100, 100)
+
+best_binomial_bandit(successes, n)
+```
+
+\pause 
+
+Guess posterior probabilities of being best?
+
+\pause
+
+```{r echo=FALSE}
+successes <- c(50, 51)
+n <- c(100, 100)
+
+best_binomial_bandit(successes, n)
+```
+
+
+## Implementation
+
+\large
+
+Competitive two-arm trial:
+```{r eval=FALSE}
+successes <- c(50, 56)
+n <- c(100, 100)
+
+best_binomial_bandit(successes, n)
+```
+
+\pause 
+
+Guess posterior probabilities of being best?
+
+\pause
+
+```{r echo=FALSE}
+successes <- c(50, 56)
+n <- c(100, 100)
+
+best_binomial_bandit(successes, n)
+```
+
+## Implementation
+
+Clear five-arm trial:
+
+```{r eval=FALSE}
+successes <- c(20, 30, 40, 50, 60)
+n <- c(100, 100, 100, 100, 100)
+
+best_binomial_bandit(successes, n) |> round(3)
+```
+
+\pause 
+
+Guess posterior probabilities of being best?
+
+\pause
+
+```{r echo=FALSE}
+successes <- c(20, 30, 40, 50, 60)
+n <- c(100, 100, 100, 100, 100)
+
+best_binomial_bandit(successes, n) |> round(3)
+```
+
+## Implementation
+
+Competitive five-arm trial:
+
+```{r eval=FALSE}
+successes <- c(20, 30, 40, 50, 52)
+n <- c(100, 100, 100, 100, 100)
+
+best_binomial_bandit(successes, n) |> round(3)
+```
+
+\pause 
+
+Guess posterior probabilities of being best?
+
+\pause
+
+```{r echo=FALSE}
+successes <- c(20, 30, 40, 50, 52)
+n <- c(100, 100, 100, 100, 100)
+
+best_binomial_bandit(successes, n) |> round(3)
+```
+
+## Simulating Binomial Bandits 
+
+Three arms:
+```{r eval=TRUE}
+p_success <- c(0.2, 0.25, 0.3)
+n_waves <- 4
+n_per_wave <- 20
+```
+
+Wave 1: Uniform draw over 3 arms
+
+```{r eval=TRUE}
+wave1_arms <- sample(p_success, 
+                     size = n_per_wave, 
+                     replace = TRUE)
+wave1_arms
+```
+
+## Simulating Binomial Bandits 
+
+```{r}
+table(wave1_arms)
+```
+
+Draw wave 1 outcomes:
+
+```{r eval=TRUE}
+wave1_outcome <- rbinom(n_per_wave, 1, prob = wave1_arms)
+wave1_outcome
+
+df_wave1 <- tibble(wave1_arms, wave1_outcome)
+```
+
+## Simulating Binomial Bandits 
+
+```{r}
+table_wave1 <- table(df_wave1)
+table_wave1
+```
+
+## Simulating Binomial Bandits 
+
+Posterior probabilities of being best:
+
+```{r eval=TRUE}
+successes <- table_wave1[, "1"]
+n <- rowSums(table_wave1)
+
+posterior_prob_best <- best_binomial_bandit(successes, n)
+posterior_prob_best
+```
+
+## Simulating Binomial Bandits 
+
+Wave 2: Thompson sampling
+
+```{r eval=TRUE}
+wave2_arms <- sample(p_success, size = n_per_wave,
+                     prob = posterior_prob_best,
+                     replace = TRUE)
+
+table(wave2_arms)
+
+wave2_outcome <- rbinom(n_per_wave, 1, prob = wave2_arms)
+
+df_wave2 <- tibble(wave2_arms, wave2_outcome)
+
+table_wave2 <- table(df_wave2)
+```
+
+## Simulating Binomial Bandits 
+
+```{r}
+table_wave2
+```
+
+\pause
+
+```{r}
+successes <- table_wave2[, "1"]
+n <- rowSums(table_wave2)
+
+best_binomial_bandit(successes, n)
+```
+
+\pause
+(Note: update needed to make _cumulative_!)
+
+## Simulating Binomial Bandits 
+
+Instead of doing this manually, write a loop/iteration \ldots
+
+```{r echo=FALSE, eval=TRUE}
+options(dplyr.summarise.inform = FALSE)
+
+my_ts_bandit <- function(p_success, n_waves, n_per_wave, verbose = TRUE){
+
+  # MUST FIX. THIS IS NOT CUMULATIVE/POSTERIOR!!
+  n_arms <- length(p_success)
+
+  arm_id <- 1:n_arms
+
+  df_arm_id <- tibble(arm_id, p_success)
+
+  df_results <- crossing(wave = 1:n_waves, arm_id = arm_id, post_prob_best = NA_real_)
+
+  df_results$arm <- rep(p_success, n_waves)
+
+  df_results <- df_results %>% select(wave, arm_id, arm, post_prob_best)
+
+  # Wave 1:
+
+  wave1_arms <- sample(arm_id, size = n_per_wave, replace = TRUE)
+
+  if(verbose == TRUE){cat("Wave 1 is assigned!\n")}
+
+  wave1_outcome <- rbinom(n_per_wave, 1, prob = p_success[wave1_arms])
+
+  df_wave1 <- tibble(wave1_arms, wave1_outcome)
+
+  sf_wave1 <- df_wave1 %>% group_by(wave1_arms) %>%
+    summarise(s = sum(wave1_outcome), n = n()) %>%
+    right_join(df_arm_id, by = c("wave1_arms" = "arm_id")) %>%
+    arrange(wave1_arms) %>%
+    select(wave1_arms, p_success, s, n) %>%
+    replace_na(list(s = 0, n = 0))
+
+  successes <- sf_wave1$s
+  n <- sf_wave1$n
+
+  posterior_prob_best <- best_binomial_bandit(successes, n)
+
+  df_results[1:n_arms, "post_prob_best"] <- posterior_prob_best
+
+  sf_wave_total <- sf_wave1
+
+  if(n_waves > 1){
+
+    for(i in 2:n_waves){
+
+      if(verbose == TRUE){cat("Wave", i, "\n")}
+
+      wave_arms <- sample(arm_id, size = n_per_wave,
+                           prob = posterior_prob_best,
+                           replace = TRUE)
+
+      wave_outcome <- rbinom(n_per_wave, 1, prob = p_success[wave_arms])
+
+      df_wave <- tibble(wave_arms, wave_outcome)
+
+      sf_wave_tmp <- df_wave %>% group_by(wave_arms) %>%
+        summarise(s = sum(wave_outcome), n = n()) %>%
+        right_join(df_arm_id, by = c("wave_arms" = "arm_id")) %>%
+        arrange(wave_arms) %>%
+        select(wave_arms, p_success, s, n) %>%
+        replace_na(list(s = 0, n = 0))
+
+      sf_wave_total$s <- sf_wave_total$s + sf_wave_tmp$s
+      sf_wave_total$n <- sf_wave_total$n + sf_wave_tmp$n
+
+      successes <- sf_wave_total$s
+      n <- sf_wave_total$n
+
+      posterior_prob_best <- best_binomial_bandit(successes, n)
+
+      rows_to_fill <- (n_arms * (i - 1) + 1):(n_arms * i)
+
+      df_results[rows_to_fill, "post_prob_best"] <- posterior_prob_best
+    }
+  }
+
+  return(df_results)
+}
+
+```
+
+Implement:
+
+```{r eval=TRUE}
+my_b <- my_ts_bandit(p_success = c(.2, .25, .3),
+                     n_waves = 4, 
+                     n_per_wave = 20)
+```
+
+## Simulating Binomial Bandits 
+
+```{r out.width=275, fig.align='center'}
+ggplot(my_b, aes(wave, post_prob_best)) +
+  geom_line(aes(color = as.factor(arm)))
+```
+
+## Simulating Binomial Bandits, Take 2
+
+```{r out.width=225, fig.align='center'}
+my_b <- my_ts_bandit(p_success = c(.2, .25, .3),
+             n_waves = 4, n_per_wave = 20, verbose = FALSE)
+
+ggplot(my_b, aes(wave, post_prob_best)) +
+  geom_line(aes(color = as.factor(arm)))
+```
+
+## Simulating Binomial Bandits, Take 3
+
+```{r out.width=225, fig.align='center'}
+my_b <- my_ts_bandit(p_success = c(.2, .25, .3),
+             n_waves = 4, n_per_wave = 20, verbose = FALSE)
+
+ggplot(my_b, aes(wave, post_prob_best)) +
+  geom_line(aes(color = as.factor(arm)))
+```
+
+
+***
+
+\huge
+
+\begin{center}
+Next:\\
+Mediation, Interference, \\
+Transparency, Replication, Designing Studies?
+\end{center}
+
+***
+
+\footnotesize
+
+

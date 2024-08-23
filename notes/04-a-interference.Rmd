@@ -1,0 +1,449 @@
+---
+title: | 
+    | Interference 
+header-includes:
+  - \usepackage{datetime}
+  - \usepackage{amsmath}
+  - \usepackage{wasysym}
+  - \usepackage{color}
+date: "2024-08-23"
+author: Ryan T. Moore
+institute: American University
+output:
+  beamer_presentation:
+    slide_level: 2
+    toc: true
+    fonttheme: serif
+    includes:
+      in_header: zzz_beamer_header.tex
+  pdf_document:
+    fig_caption: true
+    number_sections: true
+    urlcolor: blue
+link-citations: yes 
+bibliography: "../admin/main.bib"
+---
+  
+```{r knitr options, echo=FALSE, warning=FALSE}
+# Encoding required for proper knitr rendering
+options(encoding = "native.enc")
+```
+
+```{r enviro, warning = FALSE, results = 'hide', echo = FALSE, message = FALSE}
+
+library(blockTools)
+library(xtable)
+library(knitr)
+library(png)
+library(ggdag)
+library(grid)
+library(gridExtra)
+library(devtools)
+library(tidyverse)
+```
+
+# Interference
+
+## Interference
+
+
+\Large
+
+@rubin78 
+ 
+SUTVA 2: No interference between units.
+
+Does $A$'s assignment affect $B$'s potential outcomes? 
+
+
+## Interference
+
+\large 
+>- Describe violation of SUTVA in social pressure experiment.  
+>- Does assg of MTurk survey respondent $A$ to conjoint profile $X$ affect response of MTurker $B$? 
+>- Does assg of election monitors to polling place $A$ affect fraud at
+    $B$?
+>- Does assg of child $A$ to vaccine affect health of $B$?  
+>- Does assg of $A$ to GOTV door knock affect turnout of neighbor?
+>- Does assg of develpmnt £ to village $A$ affect trust in $B$? 
+>- Other common examples?
+
+## Examples of Interference in Field Experiments
+
+@gergre12
+
+\large
+
+>- Contagion
+>- Displacement
+>- Communication
+>- Knowledge of others (disappointment/pride)
+>- Deterrence 
+>- Persistence 
+>- Memory
+
+
+## Bias under Interference
+
+| Agent | Y if MaryH | Y if PeterH | Y if LimorH | Y if NobodyH |
+| :---------: | :--------: | :---------: | :---------: | :----------: |
+|    Mary     |    100     |     50      |     70      |      70      |
+|    Peter    |     50     |     50      |     50      |      50      |
+|    Limor    |     90     |     50      |     90      |      90      |
+| --------- | -------- | --------- | --------- | ---------- |
+|    Mean    |     80     |     50      |     70      |      70      |
+
+\pause 
+>- $Y_i(0)$ _unstable_, since depends on who assigned Tr
+>- $\overline{Y}_{\textrm{None}} = 70$.
+>- Calc TEs relative to $\overline{Y}_{\textrm{None}}$ ("uniformity")
+
+## Bias under Interference: Uniformity Trial
+
+| Agent | Y if MaryH | Y if PeterH | Y if LimorH | Y if NobodyH |
+| :---------: | :--------: | :---------: | :---------: | :----------: |
+|    Mary     |    100     |     50      |     70      |      70      |
+|    Peter    |     50     |     50      |     50      |      50      |
+|    Limor    |     90     |     50      |     90      |      90      |
+| --------- | -------- | --------- | --------- | ---------- |
+|    Mean    |     80     |     50      |     70      |      70      |
+
+
+>- True uniformity ATE: $\frac{(100-70) + (50 - 50) + (90-90)}{3} = 10$ \pause 
+>- But, calculate all TEs relative to uniformity: 
+>    - If Mary, $\frac{100+50+90}{3} - 70 = 80-70 = 10$
+>    - If Peter, $\frac{50+50+50}{3} - 70 = 50 - 70 = -20$
+>    - If Limor, $\frac{70+50+90}{3} - 70 = 70-70 = 0$
+>- So, $E(\textrm{Diff in Means}) = \frac{10-20+0}{3} = -\frac{10}{3}$
+>- So, $E(\textrm{Diff in Means}) \neq ATE$
+>- Diff in means is _biased_ for uniformity ATE! \pause  \frownie
+
+
+
+## Bias under Interference: Difference-in-Means
+
+| Agent | Y if MaryH | Y if PeterH | Y if LimorH | Y if NobodyH |
+| :---------: | :--------: | :---------: | :---------: | :----------: |
+|    Mary     |    100     |     50      |     70      |      70      |
+|    Peter    |     50     |     50      |     50      |      50      |
+|    Limor    |     90     |     50      |     90      |      90      |
+| --------- | -------- | --------- | --------- | ---------- |
+|    Mean    |     80     |     50      |     70      |      70      |
+
+>- What about empirical difference in means, $\widehat{\textrm{Diff in Means}}$?
+>- Empirically, if randomly select winner, calc diff-in-means,
+>    - If Mary, $100-\frac{50+90}{2} = 100-70 = 30$
+>    - If Peter, $50 - \frac{50+50}{2} = 50 - 50 = 0$
+>    - If Limor, $90-\frac{70+50}{2} = 90-60 = 30$
+>- $E(\widehat{\textrm{Diff in Means}}) = 20$
+
+\pause 
+
+$E(\widehat{ATE}) \neq ATE$, so, estimator _biased_ under randomization. \pause \frownie
+
+## Bias under Interference: Reference Control
+
+| Agent | Y if MaryH | Y if PeterH | Y if LimorH | Y if NobodyH |
+| :---------: | :--------: | :---------: | :---------: | :----------: |
+|    Mary     |    100     |     50      |     70      |      70      |
+|    Peter    |     50     |     50      |     50      |      50      |
+|    Limor    |     90     |     50      |     90      |      90      |
+| --------- | -------- | --------- | --------- | ---------- |
+|    Mean    |     80     |     50      |     70      |      70      |
+
+>- What if use "Limor honored" as reference "control"?
+>- True "Limor" ATE: $\frac{(100-70) + (50 - 50)}{2} = 15$
+>- Calculate diff-in-means TE's relative to "Limor honored"
+>    - If Mary, $80-70=10$
+>    - If Peter, $50-70=-20$
+>    - $E(\textrm{Diff in Means}) = \frac{10-20}{2} = -5$
+>- And, $E(\widehat{\textrm{Diff in Means}}) = 20$
+
+\pause 
+
+With interference, diff-in-means under randomization biased. \pause \frownie
+
+
+## Notation
+
+\large
+
+\begin{eqnarray*}
+Y_i(z_i, {\bf z}) & \stackrel{?}{=} & Y_i(z_i, {\bf z}') \\ \pause
+Y_1\left(1, \left(1, 0, 0, 1, \ldots \right) \right) &
+\stackrel{?}{=} & Y_1\left(1, \left(1, 1, 0, 0, \ldots \right) \right)\\
+Y_0\left(0, \left(0, 0, 0, 1, \ldots \right) \right) &
+\stackrel{?}{=} & Y_0\left(0, \left(0, 1, 0, 0, \ldots \right) \right)
+\end{eqnarray*}
+
+
+
+
+## Estimation in Presence of Interference
+
+>- Let $T_i'=$ whether my friend is treated
+>- $T_i=$ whether I (unit $i$) am treated 
+>- Then, $Y_{T_i'T_i}$ is my potential outcome using both assignments  
+
+\pause 
+
+Under balanced random assignment, **no** interference, naive diff in means has expectation 
+
+\pause 
+
+$$\frac{\bar{Y}_{11} + \bar{Y}_{01}}{2} - \frac{\bar{Y}_{10} + \bar{Y}_{00}}{2} = \bar{Y}_{01} - \bar{Y}_{00}$$  
+
+\pause 
+
+which is _unbiased_ for ATE.
+
+
+## Estimation in Presence of Interference
+
+
+\large
+
+
+>- But, if $$\underbrace{\bar{Y}_{11} - \bar{Y}_{01}}_{\textrm{spillover eff on Tr}} > \underbrace{\bar{Y}_{10} - \bar{Y}_{00}}_{\textrm{spillover eff on Co}}$$ then tend to overest $\bar{Y}_{01} - \bar{Y}_{00}$
+>- If $$\underbrace{\bar{Y}_{11} - \bar{Y}_{01}}_{\textrm{spillover eff on Tr}} < \underbrace{\bar{Y}_{10} - \bar{Y}_{00}}_{\textrm{spillover eff on Co}}$$ then tend to underestimate $\bar{Y}_{01} - \bar{Y}_{00}$.
+
+
+
+## Design for Estimating Interference
+
+\large
+
+>- Multilevel experiments can help estimate these effects
+>    - Given individuals within communities 
+>    - Randomly assign whether community gets 20% or 80% treatment
+>    - Randomly assign treatment to some individuals in communities 
+>- ``Detecting Spillover Effects: Design and Analysis of Multilevel Experiments\text{''}, @sinmccgre12
+
+## Design for Estimating Interference
+
+\large
+
+OES project with IRS (US tax authority): 
+
+\pause 
+
+>    - assign preparers to "some client letters", "no client letters"
+>    - assign clients in "some client letters" preparers to letters/no letters
+
+
+
+## Diagnosis of Potential Interference
+
+1. Block:
+
+```{r warning=FALSE}
+data(x100)
+block.out <- block(data = x100, groups = "g", 
+                   id.vars = c("id"), 
+                   block.vars = c("b1", "b2"))
+```
+
+2. Assign:
+
+```{r warning = FALSE}
+assg.out <- assignment(block.out, seed = 157)
+```
+
+## Diagnosis of Potential Interference
+
+Diagnose interference after assgnmnt (1D, @lintsicoh01)
+
+3. \alert{Diagnose}: 
+
+```{r warning = FALSE}
+diagnose(assg.out, data = x100, id.vars = "id", 
+    suspect.var = "b1", suspect.range = c(0, 5))
+```
+
+## Further Examination of Design
+
+4. Get block IDs:
+
+```{r warning = FALSE}
+createBlockIDs(assg.out, data = x100, id.var = "id")
+```
+
+## Further Examination of Design
+
+5. Get balance:
+
+```{r warning = FALSE}
+assg2xBalance(assg.out, x100, id.var = "id", 
+    bal.vars = c("b1", "b2"))
+```
+
+
+## Avoiding Potential Interference due to Proximity
+
+Are units too near each other?
+
+\pause 
+
+\includegraphics[width=4.8in]{figs/04-rand3k.pdf}
+
+
+
+<!-- ## Avoiding Potential Interference due to Proximity -->
+
+<!-- \includegraphics[width=4.8in]{figs/14-rand3k2.pdf} -->
+
+
+## Avoiding Potential Interference due to Proximity
+
+3000 iterations, max min distance:
+
+\includegraphics[width=4.8in]{figs/04-maxmin3k.pdf}
+
+
+
+## Estimating Direct and Indirect Effects
+
+\large
+
+>- Different to mediation _direct_, _indirect_ effects
+
+```{r warning = FALSE, echo = FALSE, fig.height=4.3}
+coords <- list(x = c(T = 0, Y = 2, M = 1), 
+               y = c(T = 1, Y = 1.1, M = 1.5))
+dagify(Y ~ T + M, M ~ T, coords = coords) %>% 
+  ggdag_classic(size = 30) + theme_dag_blank()
+```
+
+## Estimating Direct and Indirect Effects
+
+\large
+
+@hudhal08 (on @aliemcvon05)
+
+>- Here, 
+>    - _direct_: from treating $i$ 
+>    - _indirect_: from treating $j \neq i$
+
+\pause 
+
+Think of this as different problem 
+
+>- (Though, "effect of treatment through others" works?)
+>- (Common concept, but not really a mediating _variable_)
+
+## Estimating Direct and Indirect Effects
+
+@hudhal08 (on @aliemcvon05)
+
+\vspace{-20mm}
+
+```{r echo=FALSE}
+img <- readPNG("figs/04-hudhal-table-1.png")
+grid.raster(img)
+```
+
+\vspace{-15mm}
+
+>- Consider $>50$\% as $A$, $<28$\% as $B$  
+>- Direct effect in $B$: $7.01-2.66 = 4.35$  
+>- Direct effect in $A$: $1.47-1.27=0.2$  
+>- Indirect effect on unvaccinated: $7.01-1.47= 5.54$  
+>- Total effect: $7.01-1.27=5.74$ 
+>- Overall effect: $35/8479-25/18623 = 2.79/1000$
+
+## Estimating Direct and Indirect Effects
+
+\large 
+
+@hudhal08 (on @aliemcvon05)
+
+\Large
+	
+Designing the randomized experiment:
+
+```{r echo=FALSE}
+img <- readPNG("figs/04-hudhal-table-2.png")
+grid.raster(img)
+```
+
+## @hudhal08 (on Ali 2005)
+
+```{r echo=FALSE}
+img <- readPNG("figs/04-hudhal-table-3.png")
+grid.raster(img)
+```
+
+\vspace{-10mm}
+
+- $\psi$: 50% coverage
+- $\phi$: 30% coverage
+
+
+## Application: Displacing Election Irregularities
+
+\large 
+
+@ichsch12 in Ghana
+
+Design:
+
+>- Blocks of 3 constituencies, select 1 for Tr, 2 for Co
+>- Treatment constituencies: send observers to 25% of areas
+>- So, areas can be 
+>    - Tr in Tr constituency
+>    - Co in Tr constituency
+>    - Co in Co constituency
+
+>- Where election observers are sent, smaller registration irregularities
+>- In nearby control areas, _larger_ irregularities
+
+## @sobel06
+
+\large 
+
+If interference, diff-in-means estimator (or regression coef) 
+
+- is **not** unbiased for ATE
+- is difference:
+
+$$(\textrm{ITT for Tr group}) - (\textrm{indirect/spillover effect on Co group})$$
+
+
+## @rosenbaum07
+
+>- Randomization inference gives valid coverage, even if interference
+
+Null Hypotheses:
+
+>- No primary effect:  $H_0: Y_{bi\mathbf{z}} = Y_{bi\mathbf{z}'}$
+>    - no effect of treatment itself on $i$
+>- No effect: $H_0: Y_{bi\mathbf{z}} = \widetilde{Y}_{bi}$
+>    - Outcome for $i$ is same as if assigned Tr, but Tr withheld from _everyone_ ("uniformity")
+
+\pause 
+
+Effect, but no Primary Effect: 
+
+>- if exposing block gets everyone sick, then no primary effect of $i$ getting directly exposed
+>- if news raises anxiety in HH, irrelevant if I saw news
+
+
+
+***
+
+\huge
+
+\begin{center}
+Next: Causal Forests
+\end{center}
+
+***
+
+
+## References {.allowframebreaks}
+
+\footnotesize
+
+
+
+

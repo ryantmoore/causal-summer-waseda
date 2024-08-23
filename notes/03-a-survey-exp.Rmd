@@ -665,10 +665,12 @@ But, AMCE for {\tt M} is negative!
 - AMCE suited for "selection-process" questions: how would outcome obtain?
     - How likely is a male immigrant to get a visa? 
     - Are female immigrants more or less likely to get a visa than male immigrants?
+    - Comparing selection of ($A$ v. $B$) to ($A'$ v. $B$)
 - ACP suited for "preference-related" questions: which is preferred?
     - Do people prefer male or female immigrants? 
     - Is gender more determinant than countries of origin in people’s choices? 
     - How do these preferences differ across subgroups? 
+    - Comparing pref for $A$ v. $A'$
 
 ## What should we do tomorrow?
 
@@ -683,7 +685,7 @@ Let's vote!
 
 PollEv.com/rmoore952
 
-![](~/Desktop/Screenshot 2024-08-22 at 09.59.34.png){height=50%}
+![](figs/03-QR-poll.png){height=50%}
 
 \vspace{2mm}
 
