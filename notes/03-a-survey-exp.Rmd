@@ -1,0 +1,706 @@
+---
+title: | 
+    | Survey Experiments
+subtitle: Research Programs and Conjoint Analysis
+header-includes:
+  - \usepackage{datetime}
+  - \usepackage{amsmath}
+  - \usepackage{wasysym}
+  - \usepackage{color}
+date: "2024-08-22"
+author: Ryan T. Moore
+output:
+  beamer_presentation:
+    slide_level: 2
+    toc: true
+    fonttheme: serif
+    includes:
+      in_header: zzz_beamer_header.tex
+  pdf_document:
+    fig_caption: true
+    number_sections: true
+    urlcolor: blue
+link-citations: yes 
+bibliography: "../admin/main.bib"
+---
+  
+```{r knitr options, echo=FALSE, warning=FALSE}
+# Encoding required for proper knitr rendering
+options(encoding = "native.enc")
+```
+
+```{r enviro, warning = FALSE, results = 'hide', echo = FALSE, message = FALSE}
+
+library(estimatr)
+library(xtable)
+library(knitr)
+library(png)
+library(grid)
+library(gridExtra)
+library(devtools)
+library(tidyverse)
+```
+
+
+# The Margin of Error and Sample Size
+
+## Margin of Error and Sample Size
+
+In survey sampling, we sometimes refer to the _margin of error_ (MoE). This is a component of the confidence interval calculation:
+
+$$[\text{Estimate } - \underbrace{\text{Critical Value} \cdot SE}_{\text{Margin of Error}}, \quad \text{Estimate } + \underbrace{\text{Critical Value }\cdot SE}_{\text{Margin of Error}}]$$
+
+## Margin of Error and Sample Size
+
+\large
+
+That is,
+
+$$\text{MoE} = \text{Critical Value }\cdot SE$$
+
+\pause 
+
+We can use this to find the minimum sample size for a certain level of precision in a survey.
+
+\pause 
+
+Suppose we have a survey asking whether Scottish voters support Brexit, and we want it to be precise to within 0.03 (three percentage points), with 95% confidence. \pause  
+
+## Margin of Error and Sample Size
+
+SE for sample proportion:
+
+$$SE(\hat{p}) = \sqrt{\frac{\hat{p} (1 - \hat{p})}{n}}$$
+\pause 
+
+To be conservative, use largest possible SE \pause  -- occurs at $\hat{p} = 0.5$. \pause  
+
+\vspace{0mm}
+
+```{r echo=FALSE, out.width="70%", fig.align='center'}
+curve(sqrt(x * (1-x) / 1000), from = 0, to = 1, xlab = "p-hat", ylab = "SE(p-hat)")
+```
+
+
+## Margin of Error and Sample Size
+
+
+So, find $n$ given other parameters:
+
+\begin{eqnarray*}
+\text{MoE} & = & \text{Critical Value }\cdot SE \\ \pause 
+0.03 & = & 1.96 \cdot \sqrt{\frac{.5 (1 - 0.5)}{n}} \\ \pause 
+0.03^2 & = & 1.96^2 \cdot \frac{.5 (1 - 0.5)}{n} \\ \pause 
+n & = & 1.96^2 \cdot \frac{.5 (1 - 0.5)}{0.03^2} \\ \pause 
+n & \approx & 3.8416 \cdot 277.8 \\
+n & \approx & 1067
+\end{eqnarray*}
+
+## Power and Sample Size
+
+\large
+
+The MoE can help guide sampling, but ignores the treatment effect. \pause 
+
+If a survey experimental treatment effect $= 0.15$, MoE of 0.03 will likely detect it.
+
+\pause 
+
+If a survey experimental treatment effect $= 0.02$, MoE of 0.03 _not_ likely to detect it.
+
+## Power and Sample Size
+
+\large
+
+_Power_ is probability of detecting a particular TE, if it in fact exists.
+
+\pause 
+
+E.g., what's our probability of detecting effect of 0.02, with total sample size 1067, from base rate of 0.5?
+
+\pause 
+
+```{r}
+power.prop.test(n = 1067 / 2, p1 = 0.5, p2 = 0.52)
+```
+
+## Power and Sample Size
+
+
+For continuous outcomes, everything matters that is in
+
+\footnotesize
+
+$$SE(\widehat{ATE}) = \sqrt{\frac{1}{N-1} \left[ \frac{m \mathrm{Var}(Y_i(0))}{N-m} + \frac{(N-m)\mathrm{Var}(Y_i(1))}{m} +
+2\mathrm{Cov}(Y_i(0), Y_i(1)) \right]}$$
+
+
+## Power and Sample Size
+
+For continuous outcome, 
+
+```{r eval=FALSE}
+power.t.test(n = 100, delta = 1.5, sd = 1)
+```
+
+\pause 
+
+```{r echo=FALSE}
+power.t.test(n = 100, delta = 1.5, sd = 1)
+```
+
+
+
+
+
+## Power and Sample Size
+
+(See `code/03-power.R`.)
+
+## Power and Sample Size
+
+\large
+
+(We often use simulation to get power, sample size, MDE for complex assignments or estimation strategies.)
+
+
+
+# List Experiments
+
+***
+
+\LARGE
+
+\center
+Split the class!
+
+
+***
+
+\large
+
+- I have read George Orwell's _1984_.
+- I am currently enrolled in a doctoral program (PhD).
+- I purchased groceries this week. \pause 
+- I have ridden a bicycle in the month of August.
+
+\pause 
+
+Let $X$ be the number of items agreed with.
+
+$X_{\text{Group1}} = \underline{\qquad}$  
+$X_{\text{Group2}} = \underline{\qquad}$
+
+
+## 1991 US National Race and Politics Survey
+
+```{r echo=FALSE}
+img <- readPNG("figs/05-list-race3.png")
+grid.raster(img)
+```
+
+## 1991 US National Race and Politics Survey
+
+```{r echo=FALSE}
+img <- readPNG("figs/05-list-race4.png")
+grid.raster(img)
+```
+
+## Assumptions
+
+\large
+
+@blaima12 formalise analysis.
+
+\pause 
+
+Assumptions:
+
+1. No design effects.
+2. No liars.
+
+\pause 
+
+Under these two, difference in means is _unbiased_.
+
+\pause 
+Let $\tau = \text{true ATE}$.  Let
+
+$$\hat{\tau} = \frac{1}{n_{\text{Tr}}} \sum\limits_{i=1}^n T_i Y_i- \frac{1}{n_{\text{Co}}} \sum\limits_{i=1}^n (1-T_i)Y_i$$
+
+\pause 
+
+Then
+
+$$E(\hat{\tau}) = \tau$$
+
+
+## Assumptions
+
+\large
+
+1. No design effects. \pause 
+
+Count of (3) control items is constant: \pause 
+
+$$\sum\limits_{j=1}^J Z_{ij}(0) = \sum\limits_{j=1}^J Z_{ij}(1)$$
+
+\pause 
+
+or, (count under Tr) $=$ (count under Co) $+$ (0/1 for sensitive item):
+
+$$Y_i(1) = Y_i(0) + Z_{i, J+1}(1)$$
+
+## Assumptions
+
+\large
+
+2. No liars. Response to sensitive item is true.
+
+\pause 
+
+$$Z_{i, J+1}(1) = Z^*_{i, J+1}$$
+
+## Interpretation
+
+\large
+
+The unbiasedness of the difference in means implies
+
+$$E(\hat{\tau}) = Pr(Z^*_{i, J+1} = 1)$$
+
+\pause 
+
+Interpret difference-in-means as  
+"probability sensitive item is true."
+
+\pause 
+
+As with prior diff-in-means, can calculate it via regression. 
+
+## Interpretation
+
+```{r echo=FALSE}
+img <- readPNG("figs/05-list-race-results.png")
+grid.raster(img)
+```
+
+## Interpretation
+
+\large
+
+What is _social desirability bias_ in surveys?
+
+\pause 
+
+$$S(x) = Pr(Z_{i, J+1}(0) = 1 | X_i = x) - Pr(Z^*_{i, J+1} = 1 | X_i = x)$$
+
+\pause 
+
+(First term: shown control, then asked _directly_)
+
+## Interpretation
+
+```{r echo=FALSE}
+img <- readPNG("figs/05-list-race-socbias.png")
+grid.raster(img)
+```
+
+# Conjoint Experiments
+
+## Conjoint Experiments
+
+\Large
+
+_Conjoint experiments_ \ldots
+
+>- ask participants to select between hypothetical profiles, with their attributes randomized;
+>- are a way to address multidimensionality -- many factors, but only one vote;
+>- can randomly assign attributes, or randomly assign them conditional on some restrictions;
+>- can be a little tricky to interpret.
+
+
+***
+
+```{r echo=FALSE}
+img <- readPNG("figs/05-conj-immig.png")
+grid.raster(img)
+```
+
+***
+
+```{r warning = FALSE}
+load("../data/03-candidate.RData")
+cand <- x
+head(cand)
+```
+
+*** 
+
+```{r warning = FALSE}
+load("../data/03-immigrant.RData")
+immig <- x
+head(x)
+```
+
+## Notation
+
+\Large
+
+Indices
+
+- $i$ respondent
+- $j$ alternative (candidate 2)
+- $k$ task (3rd task)
+- $l$ component of profile
+
+## Notation
+
+\large
+
+Treatments
+
+- $T_{ijkl}$ a component shown
+- $T_{ijk}$ a profile shown (from $\mathcal{T}$)
+- $\mathbf{T}_{ik}$ all profiles shown for task $k$
+- $\bar{\mathbf{T}}_i$ all profiles hypothetically shown ($J\cdot K$)
+- $\mathbf{t}$ all profiles actually shown, in sequence
+
+## Notation
+
+\large 
+
+Potential outcomes
+
+- $Y_{ik}(\bar{\mathbf{t}})$ pot outcomes **observed** under full seq of profiles ($J$-dim)
+- $Y_{ik} \equiv Y_{ik}(\bar{\mathbf{T}}_i)$ pot outcomes under hypothetical full seq of profiles ($J$-dim)
+- $Y_{ijk}(\bar{\mathbf{T}}_i)$ component of $Y_{ik}(\bar{\mathbf{T}}_i)$
+- $Y_i(\mathbf{t})$ pot outcomes under observed seq of profiles  
+(given Assumption 1)
+
+## Assumptions
+
+1. Stability, no carryover: if $\mathbf{T}_{ik} = \mathbf{T}'_{ik'}$, $$Y_{ijk}(\bar{\mathbf{T}}_i) = Y_{ijk'}(\bar{\mathbf{T}}'_i)$$
+If treatments in task 1 same as treatments in task 6, same potential outcomes.
+
+\pause 
+
+2. No profile-order effects: if $T_{ijk} = T'_{ij'k}$ and $T_{ij'k} = T'_{ijk}$, 
+$$Y_{ij}(\mathbf{T}_{ik}) = Y_{ij'}(\mathbf{T}'_{ik})$$
+Treatment A-B has same potential outcomes as treatment B-A.
+
+\pause 
+
+3. Randomization: $$Y_{i}(\mathbf{t}) \text{ indep of } T_{ijkl}$$
+Profiles don't disprop go to those who like them, e.g.
+
+## An Estimand: ATE
+
+\large
+
+With @holland86, "the effect of a cause is always relative to another cause"
+
+\pause
+
+$$\bar{\pi}(\mathbf{t}_1, \mathbf{t}_0) = E\left[ Y_i(\mathbf{t}_1) - Y_i(\mathbf{t}_0) \right]$$
+
+\pause 
+\vspace{5mm}
+
+\large
+\begin{center}
+Can this be observed?
+
+\pause 
+
+The Fundamental Problem of Causal Inference
+\end{center}
+
+
+## An Estimand: AMCE
+
+\begin{eqnarray*}
+\bar{\pi}_l(t_1, t_0, p(\mathbf{t})) & \equiv & E\left[ Y_i\left(t_1, T_{ijk[-l]}, T_{i[-j]k} \right) \right. \\
+&& \left. - Y_i\left(t_0, T_{ijk[-l]}, T_{i[-j]k} \right) | \left(T_{ijk[-l]}, T_{i[-j]k} \right) \in \widetilde{\mathcal{T}} \right]
+\end{eqnarray*}
+
+\pause 
+\vspace{5mm}
+
+\large
+
+\begin{center}
+Can this be observed? 
+
+\pause 
+
+The Fundamental Problem of Causal Inference
+\end{center}
+
+## The AMCE in $2\times 2$ Designs
+
+\large
+
+>- Collapsing into 2 groups $\rightsquigarrow$ AMCE
+>- Weight by probs from joint dist'ns of other attribute
+
+
+## Estimation: Calculating the AMCE
+
+\Large
+
+See `code/03-amce-simple.R`.
+
+
+
+## Related Findings
+
+\Large
+
+>- How many *attributes*?
+>- A lot!
+>- Using 4 core attributes vs 25 or 35 (!) fillers
+>    - Effect of PID: 0.198 $\to$ 0.147
+>    - Effect of SSM position: 0.228 $\to$ 0.190
+>    - Effect of health care position: 0.146 $\to$ 0.090
+>    - Effect of age 72 penalty nearly disappears
+
+\pause 
+
+<!-- See @banhaihop18b-attributes. -->
+
+See @banhaihop21.
+
+## Related Findings
+
+\Large
+
+>- How many *tasks*?
+>- Dozens!  
+>- (But biggest effects on first task)
+
+\pause 
+
+See @banhaihop18.
+
+
+## Strange things can happen \ldots
+
+\pause
+
+```{r warning = FALSE}
+cand |> 
+  filter(atprof == "High school teacher") |> 
+  count(atinc)
+```
+
+## Strange things can happen \ldots ("atypical profiles")
+
+```{r warning = FALSE}
+cand |> filter(atprof == "High school teacher", 
+               atinc == "5.1M",
+               ated == "No BA") |> 
+  dim()
+```
+
+***
+
+```{r echo=FALSE}
+img <- readPNG("figs/05-conj-cand-prob.png")
+grid.raster(img)
+```
+
+***
+
+```{r echo=FALSE}
+img <- readPNG("figs/05-conj-cand-support.png")
+grid.raster(img)
+```
+
+## Atypical Profiles
+
+\large
+
+>- "groups of respondents exposed to different numbers of atypical profiles"
+>- (A reasonable conditional-effect diagnostic)
+>- Alternative: how atypicality affects AMCEs/ACIEs
+>- E.g., if _high inc_ usually appears in atypical profiles, then AMCE of _high inc_ vs. _low inc_ not internally valid (?)
+
+# Conjoint Interpretation
+
+## Interpreting the AMCE
+
+\large
+
+AMCE is avg (mean) effect of varying attribute $l$ in profile.
+
+\pause 
+
+E.g., `male` to `female` $\rightsquigarrow$ positive AMCE in @teekalros18: 
+
+"prefer female to male candidates".
+
+\pause 
+
+But -- AMCE does **not** give \ldots
+
+\pause 
+
+>- "majority prefer `female` to `male`"
+>- "median voter prefers `female` to `male`"
+>- "`female` candidates tend to beat `male` candidates"
+
+\pause 
+
+Why?  AMCE averages over _intensity_ of prefs
+
+\pause 
+
+Some who _strongly_ prefer `female` to `male` can create AMCE $>0$, even though _minority_.
+
+\pause 
+
+[@abrkocmag22]
+
+
+## Interpreting the AMCE
+
+\large
+
+AMCE is avg (mean) effect of varying attribute $l$ in profile.
+
+E.g., from $l_0$ to $l_1$.
+
+But -- AMCE does **not** give \ldots
+
+- "majority prefer $l_1$ to $l_0$"
+- "median voter prefers $l_1$ to $l_0$"
+- "$l_1$ candidates tend to beat $l_0$ candidates"
+
+Why?  AMCE avgs over _intensity_ of prefs
+
+Some who _strongly_ prefer $l_1$ to $l_0$ can create AMCE $>0$, even though _minority_.
+
+[@abrkocmag22]
+
+
+## What can we learn from the AMCE?
+
+\large
+
+>- AMCE is average of both _intensity_ and _direction_ of preferences
+>- "Average of voter ideal points"
+>- Greater $$cor(\text{intensity}, \text{direction})$$ more misleading AMCE is.
+>- If voters with _strong_ prefs all prefer same _direction_, then AMCE misleading.  (E.g., if strong gender pref is always for `female`, AMCE misleading.)
+
+***
+
+
+@abrkocmag22
+
+\vspace{3mm}
+
+```{r echo=FALSE}
+img <- readPNG("figs/05-conj-learn-t1.png")
+grid.raster(img)
+```
+
+***
+
+@abrkocmag22
+
+\vspace{3mm}
+
+```{r echo=FALSE}
+img <- readPNG("figs/05-conj-learn-t2.png")
+grid.raster(img)
+```
+
+***
+
+@abrkocmag22
+
+\vspace{3mm}
+
+```{r echo=FALSE}
+img <- readPNG("figs/05-conj-learn-t3.png")
+grid.raster(img)
+```
+
+\pause 
+
+\vspace{-10mm}
+
+\begin{center}
+But, AMCE for {\tt M} is negative!
+\end{center}
+
+***
+
+\large
+
+>- Fundamentally, AMCE cannot disentangle _intensity_ and _direction_ of preferences
+>- AMCE is proportional to difference in Borda scores  
+(number of candidates $i$ prefers candidate $j$ to)
+>- Exclusion of atypical profiles can alter AMCE, too.
+>- Need homogeneity of pref _intensity_ for majoritarian interpretations
+>- Suggest small number of binary attributes \ldots
+>    - but still have IIA concerns
+
+## @banhaihop22
+
+\Large 
+
+>- Incorporating direction _and_ intensity is realistic (_ceteris paribus_ is not)
+>- AMCE is an effect on candidate/party's _expected vote share_
+>- Can translate this into effect on probability of winning (given voting system)
+
+
+## Another Critique of the AMCE
+
+\large
+
+@ganter23 argues for the _average component preference_:
+
+- AMCE suited for "selection-process" questions: how would outcome obtain?
+    - How likely is a male immigrant to get a visa? 
+    - Are female immigrants more or less likely to get a visa than male immigrants?
+- ACP suited for "preference-related" questions: which is preferred?
+    - Do people prefer male or female immigrants? 
+    - Is gender more determinant than countries of origin in people’s choices? 
+    - How do these preferences differ across subgroups? 
+
+## What should we do tomorrow?
+
+\pause 
+
+\Large
+
+\centering
+Let's vote!
+
+\pause 
+
+PollEv.com/rmoore952
+
+![](~/Desktop/Screenshot 2024-08-22 at 09.59.34.png){height=50%}
+
+\vspace{2mm}
+
+Select $\leq 3$ topics to inform our discussion for tomorrow! (You may "Skip" registration.)
+
+***
+
+\huge
+
+\begin{center}
+Next:\\
+Multiarm Bandits
+
+\end{center}
+
+***
+
+\footnotesize
+
+

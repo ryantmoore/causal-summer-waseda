@@ -755,7 +755,7 @@ etc.
 
 \large
 
-A first-thought for estimating ATE for blocked design \ldots
+A first thought for estimating ATE for blocked design \ldots
 
 \pause 
 
